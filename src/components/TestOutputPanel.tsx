@@ -13,6 +13,14 @@ import { TestRunnerSimulator } from "./TestRunnerSimulator";
 import { VSCodePreview } from "./VSCodePreview";
 import { ExportPanel } from "./ExportPanel";
 import { GitHubIntegration } from "./GitHubIntegration";
+import {
+  FiCopy, FiPackage, FiDownload, FiFileText, FiTrendingUp,
+  FiAward, FiMessageCircle, FiBook,
+  FiFolder, FiMonitor, FiGitMerge, FiPlay,
+  FiGithub, FiClipboard
+} from "react-icons/fi";
+
+import { FaPuzzlePiece, FaRocket, FaBug } from "react-icons/fa";
 
 interface TestOutputPanelProps {
   testOutput: string;
@@ -38,36 +46,36 @@ const TAB_GROUPS = [
   {
     label: "Generated",
     tabs: [
-      { id: "code"     as Tab, icon: "📄", label: "Test Code"    },
-      { id: "coverage" as Tab, icon: "🔥", label: "Coverage"     },
-      { id: "mocks"    as Tab, icon: "🧩", label: "Mocks"        },
-      { id: "cicd"     as Tab, icon: "🚀", label: "CI/CD"        },
+      { id: "code" as Tab, icon: <FiFileText className="text-sm" />, label: "Test Code" },
+      { id: "coverage" as Tab, icon: <FiTrendingUp className="text-sm" />, label: "Coverage" },
+      { id: "mocks" as Tab, icon: <FaPuzzlePiece className="text-sm" />, label: "Mocks" },
+      { id: "cicd" as Tab, icon: <FaRocket className="text-sm" />, label: "CI/CD" },
     ],
   },
   {
     label: "AI Tools",
     tabs: [
-      { id: "quality"  as Tab, icon: "🏆", label: "Quality"      },
-      { id: "chat"     as Tab, icon: "💬", label: "Refine"       },
-      { id: "bugs"     as Tab, icon: "🐛", label: "Bug Scan"     },
-      { id: "docs"     as Tab, icon: "📖", label: "Docs"         },
+      { id: "quality" as Tab, icon: <FiAward className="text-sm" />, label: "Quality" },
+      { id: "chat" as Tab, icon: <FiMessageCircle className="text-sm" />, label: "Refine" },
+      { id: "bugs" as Tab, icon: <FaBug className="text-sm" />, label: "Bug Scan" },
+      { id: "docs" as Tab, icon: <FiBook className="text-sm" />, label: "Docs" },
     ],
   },
   {
     label: "Explorer",
     tabs: [
-      { id: "filetree" as Tab, icon: "🗂️",  label: "File Tree"   },
-      { id: "vscode"   as Tab, icon: "💻", label: "VS Code"      },
-      { id: "diff"     as Tab, icon: "🔄", label: "Diff"         },
-      { id: "runner"   as Tab, icon: "⚙️",  label: "Runner"      },
+      { id: "filetree" as Tab, icon: <FiFolder className="text-sm" />, label: "File Tree" },
+      { id: "vscode" as Tab, icon: <FiMonitor className="text-sm" />, label: "VS Code" },
+      { id: "diff" as Tab, icon: <FiGitMerge className="text-sm" />, label: "Diff" },
+      { id: "runner" as Tab, icon: <FiPlay className="text-sm" />, label: "Runner" },
     ],
   },
   {
     label: "Share",
     tabs: [
-      { id: "github"   as Tab, icon: "🐙", label: "GitHub"       },
-      { id: "export"   as Tab, icon: "📦", label: "Export"       },
-      { id: "history"  as Tab, icon: "📋", label: "History"      },
+      { id: "github" as Tab, icon: <FiGithub className="text-sm" />, label: "GitHub" },
+      { id: "export" as Tab, icon: <FiPackage className="text-sm" />, label: "Export" },
+      { id: "history" as Tab, icon: <FiClipboard className="text-sm" />, label: "History" },
     ],
   },
 ];
@@ -114,14 +122,14 @@ export function TestOutputPanel({
             Regenerate
           </button>
           <button onClick={handleCopy} className="px-3 py-2 text-xs text-white/60 hover:text-white border border-white/10 hover:border-white/30 rounded-lg transition-all flex items-center gap-1.5">
-            {copied ? <><svg className="w-3.5 h-3.5 text-[#00ff9d]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Copied!</> : <>📋 Copy</>}
+            {copied ? <><svg className="w-3.5 h-3.5 text-[#00ff9d]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Copied!</> : <> <FiCopy className="text-xs" /> Copy</>}
           </button>
           <button onClick={handleDownload} className="px-4 py-2 text-xs bg-[#00ff9d] text-black font-bold rounded-lg hover:bg-[#00ff9d]/90 transition-all flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             Download
           </button>
           <button onClick={() => setActiveTab("export")} className="px-4 py-2 text-xs bg-[#7b2fff]/20 border border-[#7b2fff]/30 text-[#7b2fff] hover:bg-[#7b2fff]/30 rounded-lg transition-all flex items-center gap-1.5">
-            📦 Export
+            <FiPackage className="text-xs" /> Export
           </button>
         </div>
       </div>
@@ -129,10 +137,10 @@ export function TestOutputPanel({
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Test Cases",      value: testCount,                    color: "#00ff9d" },
-          { label: "Lines",           value: lineCount,                    color: "#3b82f6" },
-          { label: "Describe Blocks", value: describeCount,                color: "#7b2fff" },
-          { label: "Mock Deps",       value: analysis.externalDeps.length, color: "#f59e0b" },
+          { label: "Test Cases", value: testCount, color: "#00ff9d" },
+          { label: "Lines", value: lineCount, color: "#3b82f6" },
+          { label: "Describe Blocks", value: describeCount, color: "#7b2fff" },
+          { label: "Mock Deps", value: analysis.externalDeps.length, color: "#f59e0b" },
         ].map(s => (
           <div key={s.label} className="p-3 bg-white/[0.03] border border-white/10 rounded-xl">
             <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
@@ -146,10 +154,10 @@ export function TestOutputPanel({
         {TAB_GROUPS.map(group => (
           <div key={group.label} className="flex items-center gap-2 flex-wrap">
             <span className="text-white/20 text-[10px] tracking-widest uppercase w-14 flex-shrink-0">{group.label}</span>
-            <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/8 rounded-xl flex-wrap">
+            <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/8 rounded-lg flex-wrap">
               {group.tabs.map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`px-3 py-1.5 text-xs rounded-lg transition-all flex items-center gap-1.5 ${activeTab === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"}`}>
+                  className={`px-3 py-1.5 text-xs rounded-md transition-all flex items-center gap-1.5 ${activeTab === tab.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/60"}`}>
                   <span>{tab.icon}</span>
                   <span className="hidden sm:inline">{tab.label}</span>
                   {tab.id === "mocks" && analysis.externalDeps.length > 0 && (
@@ -177,17 +185,17 @@ export function TestOutputPanel({
           </div>
         )}
         {activeTab === "coverage" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><CoverageMapPanel analysis={analysis} testOutput={testOutput} /></div>}
-        {activeTab === "mocks"    && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><MockGenerationPanel analysis={analysis} framework={framework} /></div>}
-        {activeTab === "cicd"     && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><CICDPanel analysis={analysis} framework={framework} /></div>}
-        {activeTab === "quality"  && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><TestQualityScorer testOutput={testOutput} analysis={analysis} framework={framework} /></div>}
-        {activeTab === "chat"     && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><IterativeRefinement testOutput={testOutput} analysis={analysis} framework={framework} onTestsUpdated={setTestOutput} /></div>}
-        {activeTab === "bugs"     && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><BugDetectionPanel analysis={analysis} /></div>}
-        {activeTab === "docs"     && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DocGeneratorPanel analysis={analysis} framework={framework} /></div>}
+        {activeTab === "mocks" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><MockGenerationPanel analysis={analysis} framework={framework} /></div>}
+        {activeTab === "cicd" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><CICDPanel analysis={analysis} framework={framework} /></div>}
+        {activeTab === "quality" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><TestQualityScorer testOutput={testOutput} analysis={analysis} framework={framework} /></div>}
+        {activeTab === "chat" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><IterativeRefinement testOutput={testOutput} analysis={analysis} framework={framework} onTestsUpdated={setTestOutput} /></div>}
+        {activeTab === "bugs" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><BugDetectionPanel analysis={analysis} /></div>}
+        {activeTab === "docs" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DocGeneratorPanel analysis={analysis} framework={framework} /></div>}
         {activeTab === "filetree" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><FileTreeExplorer analysis={analysis} testOutput={testOutput} /></div>}
-        {activeTab === "vscode"   && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><VSCodePreview analysis={analysis} testOutput={testOutput} framework={framework} projectName={projectName} /></div>}
-        {activeTab === "diff"     && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DiffViewer analysis={analysis} /></div>}
-        {activeTab === "runner"   && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><TestRunnerSimulator testOutput={testOutput} analysis={analysis} framework={framework} /></div>}
-        {activeTab === "github"   && (
+        {activeTab === "vscode" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><VSCodePreview analysis={analysis} testOutput={testOutput} framework={framework} projectName={projectName} /></div>}
+        {activeTab === "diff" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DiffViewer analysis={analysis} /></div>}
+        {activeTab === "runner" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><TestRunnerSimulator testOutput={testOutput} analysis={analysis} framework={framework} /></div>}
+        {activeTab === "github" && (
           <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
             <GitHubIntegration
               onAnalysisComplete={(a) => onNewAnalysis?.(a)}
@@ -198,8 +206,8 @@ export function TestOutputPanel({
             />
           </div>
         )}
-        {activeTab === "export"   && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><ExportPanel testOutput={testOutput} analysis={analysis} framework={framework} projectName={projectName} /></div>}
-        {activeTab === "history"  && (
+        {activeTab === "export" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><ExportPanel testOutput={testOutput} analysis={analysis} framework={framework} projectName={projectName} /></div>}
+        {activeTab === "history" && (
           <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
             <SessionHistory currentAnalysis={analysis} currentTestOutput={testOutput} currentFramework={framework} onLoadSession={(s) => setTestOutput(s.testOutput)} />
           </div>

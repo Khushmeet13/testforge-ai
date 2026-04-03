@@ -83,8 +83,7 @@ Return ONLY the documentation — one block per function, clearly labeled with t
         throw new Error("Gemini API key not found in environment variables");
       }
 
-      const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL || 
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
+      const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL;
 
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: "POST",

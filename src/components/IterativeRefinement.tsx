@@ -77,8 +77,7 @@ When the user asks for changes:
       }
 
       // Use non-streaming endpoint for better reliability
-      const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL || 
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
+      const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL;
 
       // Prepare contents array for Gemini
       const contents = [
