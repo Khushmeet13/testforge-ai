@@ -4,6 +4,7 @@ import {
   AnalysisResult, TestFramework
 } from "../types";
 import { analyzeProject } from "../utils/analyzer";
+import { FiGithub } from "react-icons/fi";
 
 interface GitHubIntegrationProps {
   onAnalysisComplete: (analysis: AnalysisResult, files: GitHubFile[]) => void;
@@ -82,8 +83,8 @@ export function GitHubIntegration({
     setLoading(true); setError(null);
     try {
       const tree = await ghFetch(`/repos/${repo.full_name}/git/trees/${repo.default_branch}?recursive=1`, connection!.token);
-      const codeExtensions = new Set([".ts",".tsx",".js",".jsx",".mjs",".py",".java",".rb",".go",".cs",".php"]);
-      const ignoredDirs = new Set(["node_modules","dist","build",".git","__pycache__","coverage","target",".next"]);
+      const codeExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".java", ".rb", ".go", ".cs", ".php"]);
+      const ignoredDirs = new Set(["node_modules", "dist", "build", ".git", "__pycache__", "coverage", "target", ".next"]);
 
       const relevantFiles: GitHubFile[] = (tree.tree as { path: string; type: string }[])
         .filter((item) => {
@@ -201,21 +202,20 @@ export function GitHubIntegration({
     <div className="space-y-5">
       {/* Progress indicator */}
       <div className="flex items-center gap-2">
-        {(["connect","repos","browse","analyze","pr"] as Step[]).map((s, i) => {
-          const steps = ["connect","repos","browse","analyze","pr"];
+        {(["connect", "repos", "browse", "analyze", "pr"] as Step[]).map((s, i) => {
+          const steps = ["connect", "repos", "browse", "analyze", "pr"];
           const current = steps.indexOf(step);
           const idx = steps.indexOf(s);
           const done = idx < current;
           const active = idx === current;
-          const labels = ["Connect","Repos","Browse","Analyze","PR"];
+          const labels = ["Connect", "Repos", "Browse", "Analyze", "PR"];
           return (
             <div key={s} className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] transition-all ${
-                active ? "bg-[#6e40c9]/20 border border-[#6e40c9]/40 text-[#6e40c9]" :
-                done  ? "bg-[#00ff9d]/15 border border-[#00ff9d]/25 text-[#00ff9d]" :
-                "bg-white/[0.03] border border-white/8 text-white/25"
-              }`}>
-                {done ? "✓" : <span className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold bg-current/20">{i+1}</span>}
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] transition-all ${active ? "bg-[#6e40c9]/20 border border-[#6e40c9]/40 text-[#6e40c9]" :
+                done ? "bg-[#00ff9d]/15 border border-[#00ff9d]/25 text-[#00ff9d]" :
+                  "bg-white/[0.03] border border-white/8 text-white/25"
+                }`}>
+                {done ? "✓" : <span className="w-3 h-3 rounded-full flex items-center justify-center text-[8px] font-bold bg-current/20">{i + 1}</span>}
                 <span className="hidden sm:inline">{labels[i]}</span>
               </div>
               {i < 4 && <div className={`h-px w-4 ${done ? "bg-[#00ff9d]/40" : "bg-white/10"}`} />}
@@ -235,7 +235,8 @@ export function GitHubIntegration({
         <div className="space-y-5">
           <div className="p-6 bg-white/[0.02] border border-white/10 rounded-xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#6e40c9]/20 flex items-center justify-center text-xl">🐙</div>
+              <div className="w-10 h-10 rounded-lg bg-[#6e40c9]/20 flex items-center justify-center text-xl">
+                <FiGithub className="text-base" size={20} /></div>
               <div>
                 <p className="text-white/80 text-sm font-medium">Connect GitHub Account</p>
                 <p className="text-white/30 text-xs">Uses a Personal Access Token (PAT) — never stored</p>
@@ -333,7 +334,7 @@ export function GitHubIntegration({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto">
             {repoFiles.map((f, i) => {
               const ext = "." + f.path.split(".").pop()?.toLowerCase();
-              const langIcons: Record<string, string> = { ".ts":"🔷",".tsx":"🔷",".js":"🟨",".jsx":"🟨",".py":"🐍",".java":"☕",".rb":"💎",".go":"🐹" };
+              const langIcons: Record<string, string> = { ".ts": "🔷", ".tsx": "🔷", ".js": "🟨", ".jsx": "🟨", ".py": "🐍", ".java": "☕", ".rb": "💎", ".go": "🐹" };
               return (
                 <div key={i} className="flex items-center gap-2 p-2 bg-white/[0.02] rounded-lg border border-white/6">
                   <span className="text-sm flex-shrink-0">{langIcons[ext] ?? "📄"}</span>
@@ -412,7 +413,7 @@ export function GitHubIntegration({
                   <span>New branch</span><span className="text-white/60 font-mono">testforge/add-tests-*</span>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-white/[0.03] rounded-lg">
-                  <span>Test file</span><span className="text-white/60 font-mono">tests/{(projectName ?? selectedRepo.name).replace(/[^a-zA-Z0-9]/g,"_")}{FRAMEWORK_EXTENSIONS[framework ?? "jest"]}</span>
+                  <span>Test file</span><span className="text-white/60 font-mono">tests/{(projectName ?? selectedRepo.name).replace(/[^a-zA-Z0-9]/g, "_")}{FRAMEWORK_EXTENSIONS[framework ?? "jest"]}</span>
                 </div>
               </div>
               {prError && <p className="text-red-400 text-xs p-2 bg-red-500/10 rounded-lg">{prError}</p>}

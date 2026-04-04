@@ -4,7 +4,7 @@ import { AnalysisPanel } from "./components/AnalysisPanel";
 import { TestOutputPanel } from "./components/TestOutputPanel";
 import { Header } from "./components/Header";
 import { GitHubIntegration } from "./components/GitHubIntegration";
-import { AppState, AnalysisResult } from "./types";
+import { AppState, AnalysisResult, TestFramework } from "./types";
 import { FiFolder, FiGithub } from "react-icons/fi";
 
 type EntryMode = "upload" | "github";
@@ -13,7 +13,7 @@ export default function App() {
   const [state, setState] = useState<AppState>("idle");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [testOutput, setTestOutput] = useState<string>("");
-  const [selectedFramework, setSelectedFramework] = useState<string>("");
+  const [selectedFramework, setSelectedFramework] = useState<TestFramework | "">("");
   const [projectName, setProjectName] = useState<string>("");
   const [entryMode, setEntryMode] = useState<EntryMode>("upload");
 
@@ -100,7 +100,7 @@ export default function App() {
             <TestOutputPanel
               testOutput={testOutput}
               analysis={analysis}
-              framework={selectedFramework}
+              framework={selectedFramework as TestFramework}
               projectName={projectName}
               onRegenerate={() => setState("analyzed")}
               onNewAnalysis={(newAnalysis) => {

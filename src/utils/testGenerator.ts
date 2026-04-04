@@ -76,13 +76,13 @@ export async function generateTests(
 ): Promise<string> {
   const prompt = buildPrompt(analysis, framework);
 
-  const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
+  const GEMINI_API_KEY =(import.meta as any).VITE_GEMINI_KEY;
   if (!GEMINI_API_KEY) {
     throw new Error("VITE_GEMINI_API_KEY is not set in environment variables");
   }
 
   // Use the provided Gemini Flash Lite endpoint with API key
-  const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL
+  const GEMINI_API_URL = (import.meta as any).VITE_GEMINI_API_URL
 
   const streamUrl = GEMINI_API_URL.replace(":generateContent", ":streamGenerateContent");
 

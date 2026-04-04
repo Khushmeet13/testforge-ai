@@ -71,13 +71,13 @@ When the user asks for changes:
 
     try {
       // Get API key from environment
-      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+      const GEMINI_API_KEY = (import.meta as any).VITE_GEMINI_KEY ;
       if (!GEMINI_API_KEY) {
         throw new Error("Gemini API key not found in environment variables");
       }
 
       // Use non-streaming endpoint for better reliability
-      const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL;
+      const GEMINI_API_URL = (import.meta as any).VITE_GEMINI_API_URL;
 
       // Prepare contents array for Gemini
       const contents = [

@@ -102,12 +102,12 @@ Be specific and actionable. Include 3-7 suggestions. Include 2-4 strengths.`;
 
     try {
 
-      const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
+      const GEMINI_API_KEY = (import.meta as any).VITE_GEMINI_KEY;
       if (!GEMINI_API_KEY) {
         throw new Error("Gemini API key not found in environment variables");
       }
 
-      const GEMINI_API_URL = import.meta.env.VITE_GEMINI_API_URL
+      const GEMINI_API_URL = (import.meta as any).VITE_GEMINI_API_URL
 
 
        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {

@@ -4,7 +4,7 @@ import { generateTests } from "../utils/testGenerator";
 
 interface AnalysisPanelProps {
   analysis: AnalysisResult;
-  selectedFramework: TestFramework;
+  selectedFramework: TestFramework | "";
   setSelectedFramework: (f: TestFramework) => void;
   projectName: string;
   onTestsGenerated: (tests: string) => void;
@@ -53,6 +53,11 @@ export function AnalysisPanel({
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
+    if (!selectedFramework) {
+    setError("Please select a test framework");
+    return;
+  }
+  
     setError(null);
     setStreamedText("");
     onStateChange("generating");
@@ -267,7 +272,7 @@ function FrameworkPicker({
   selected,
   onChange,
 }: {
-  selected: TestFramework;
+  selected: TestFramework | "";
   onChange: (f: TestFramework) => void;
   projectType: string;
 }) {
