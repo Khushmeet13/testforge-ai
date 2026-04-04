@@ -105,12 +105,12 @@ Return 5-12 specific bugs. Be concrete - reference actual function names and lin
 
     try {
       // Get API key from environment
-      const GEMINI_API_KEY = (import.meta as any).VITE_GEMINI_KEY ;
+      const GEMINI_API_KEY = (import.meta as any).env.VITE_GEMINI_KEY ;
       if (!GEMINI_API_KEY) {
         throw new Error("Gemini API key not found in environment variables");
       }
 
-      const GEMINI_API_URL = (import.meta as any).VITE_GEMINI_API_URL;
+      const GEMINI_API_URL = (import.meta as any).env.VITE_GEMINI_API_URL;
 
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: "POST",
