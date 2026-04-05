@@ -21,10 +21,13 @@ const FRAMEWORK_BANNER: Record<TestFramework, string> = {
   pytest: " pytest v8.2.0",
   junit:  " JUnit Platform v1.10.2",
   rspec:  " RSpec v3.13.0",
+  "react-testing-library": " RTL v16.3.0",
+  supertest: " Supertest v7.0.0",
+  cypress: " Cypress v13.10.0",
 };
 
 const FRAMEWORK_PASS: Record<TestFramework, string> = {
-  jest: "✓", vitest: "✓", mocha: "passing", pytest: "PASSED", junit: "[INFO]", rspec: "·",
+  jest: "✓", vitest: "✓", mocha: "passing", pytest: "PASSED", junit: "[INFO]", rspec: "·","react-testing-library": "✓", supertest: "✓", cypress: "passing",
 };
 
 function buildTestLines(testOutput: string, analysis: AnalysisResult, framework: TestFramework): TestLine[] {

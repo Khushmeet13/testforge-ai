@@ -7,6 +7,9 @@ const FRAMEWORK_INSTRUCTIONS: Record<TestFramework, string> = {
   pytest: "Generate Pytest file. Use pytest fixtures, parametrize where appropriate, and mock with pytest-mock or unittest.mock. Include conftest setup if needed.",
   junit: "Generate JUnit 5 test class. Use @Test, @BeforeEach, @AfterEach, @ParameterizedTest annotations. Use Mockito for mocking dependencies.",
   rspec: "Generate RSpec test file. Use describe/context/it blocks. Include let/before hooks. Use doubles for mocking.",
+   "react-testing-library": "Generate React Testing Library test file. Use render, screen, fireEvent/userEvent from '@testing-library/react'. Use describe/it/expect with Jest. Test component behavior and accessibility, not implementation details.",
+  supertest: "Generate Supertest API test file. Import supertest and the Express app. Use describe/it blocks with async/await. Test HTTP methods, status codes, response bodies, and headers.",
+  cypress: "Generate Cypress E2E test file. Use describe/it blocks with cy commands. Include cy.visit(), cy.get(), cy.intercept() for API stubbing. Test user flows and UI interactions.",
 };
 
 function buildPrompt(analysis: AnalysisResult, framework: TestFramework): string {

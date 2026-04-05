@@ -16,6 +16,7 @@ const LANG_ICONS: Record<string, string> = {
 const FRAMEWORK_EXTENSIONS: Record<TestFramework, string> = {
   jest: ".test.js", vitest: ".test.ts", mocha: ".spec.js",
   pytest: "_test.py", junit: "Test.java", rspec: "_spec.rb",
+   "react-testing-library": ".test.tsx", supertest: ".test.js", cypress: ".cy.js",
 };
 
 function syntaxHighlight(code: string, lang: string): string {

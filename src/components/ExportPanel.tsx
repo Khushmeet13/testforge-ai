@@ -12,16 +12,23 @@ interface ExportPanelProps {
 const FRAMEWORK_EXTENSIONS: Record<TestFramework, string> = {
   jest: ".test.js", vitest: ".test.ts", mocha: ".spec.js",
   pytest: "_test.py", junit: "Test.java", rspec: "_spec.rb",
+   "react-testing-library": ".test.tsx", supertest: ".test.js", cypress: ".cy.js",
 };
 const FRAMEWORK_INSTALL: Record<TestFramework, string> = {
   jest: "npm install --save-dev jest @types/jest", vitest: "npm install --save-dev vitest",
   mocha: "npm install --save-dev mocha chai", pytest: "pip install pytest pytest-cov",
   junit: "# Add JUnit 5 to pom.xml dependencies", rspec: "gem install rspec",
+   "react-testing-library": "npm install --save-dev @testing-library/react @testing-library/jest-dom",
+  supertest: "npm install --save-dev supertest @types/supertest",
+  cypress: "npm install --save-dev cypress",
 };
 const FRAMEWORK_RUN: Record<TestFramework, string> = {
   jest: "npx jest --coverage", vitest: "npx vitest run --coverage",
   mocha: "npx mocha", pytest: "pytest --cov=. -v",
   junit: "mvn test", rspec: "rspec spec/",
+   "react-testing-library": "npx react-scripts test --coverage",
+  supertest: "npx jest --testPathPattern=api",
+  cypress: "npx cypress run",
 };
 
 type ExportStatus = "idle" | "loading" | "done" | "error";
