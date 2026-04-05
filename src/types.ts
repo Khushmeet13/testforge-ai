@@ -1,6 +1,6 @@
 export type AppState = "idle" | "analyzing" | "analyzed" | "generating" | "done";
 export type ProjectType = "nodejs" | "python" | "java" | "typescript" | "unknown";
-export type TestFramework = "jest" | "pytest" | "junit" | "mocha" | "vitest" | "rspec";
+export type TestFramework = "jest" | "pytest" | "junit" | "mocha" | "vitest" | "rspec" | "react-testing-library" | "supertest" | "cypress";
 export type CICDPlatform = "github" | "gitlab" | "jenkins";
 
 // ── Core ──────────────────────────────────────────────────────────────────────

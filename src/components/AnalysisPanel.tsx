@@ -19,6 +19,9 @@ const FRAMEWORKS: { id: TestFramework; label: string; lang: string; color: strin
   { id: "pytest", label: "Pytest", lang: "Python", color: "#3776ab" },
   { id: "junit", label: "JUnit 5", lang: "Java", color: "#f89820" },
   { id: "rspec", label: "RSpec", lang: "Ruby", color: "#cc0000" },
+  { id: "react-testing-library", label: "React Testing Library", lang: "JavaScript", color: "#e36049" },
+  { id: "supertest", label: "Supertest", lang: "JavaScript", color: "#222222" },
+  { id: "cypress", label: "Cypress", lang: "JavaScript", color: "#17202c" },
 ];
 
 const PROJECT_TYPE_LABELS: Record<string, string> = {
