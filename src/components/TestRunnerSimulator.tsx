@@ -52,6 +52,12 @@ function buildTestLines(testOutput: string, analysis: AnalysisResult, framework:
     return x - Math.floor(x);
   };
 
+  // Get the first file name safely with fallbacks
+  const firstFileName = analysis.files?.[0]?.name ?? 
+                        (framework === "pytest" ? "test_main.py" : 
+                         framework === "junit" ? "TestMain.java" : 
+                         "test.spec.js");
+
   if (isPy) {
     lines.push({ id: "h1", type: "log", text: `============================= test session starts ==============================` });
     lines.push({ id: "h2", type: "log", text: `platform linux -- Python 3.11.0, pytest-8.2.0, pluggy-1.5.0` });
@@ -63,15 +69,16 @@ function buildTestLines(testOutput: string, analysis: AnalysisResult, framework:
       const pass = seededRandom(i * 137) > 0.12;
       const dur = (seededRandom(i * 31) * 0.08 + 0.01).toFixed(3);
       lines.push({
-        id: `t-${i}`, type: pass ? "pass" : "fail",
-        text: `${analysis.files[0]?.name ?? "test_main.py"}::${test}`,
+        id: `t-${i}`,
+        type: pass ? "pass" : "fail",
+        text: `${firstFileName}::${test}`,
         duration: parseFloat(dur),
       });
     });
 
-    const passed = lines.filter(l => l.type === "pass").length;
-    const failed = lines.filter(l => l.type === "fail").length;
-    const total = (lines.filter(l => l.type === "pass" || l.type === "fail").reduce((s, l) => s + (l.duration ?? 0), 0)).toFixed(2);
+    const passed = lines.filter(l => l && l.type === "pass").length;
+    const failed = lines.filter(l => l && l.type === "fail").length;
+    const total = (lines.filter(l => l && (l.type === "pass" || l.type === "fail")).reduce((s, l) => s + (l.duration ?? 0), 0)).toFixed(2);
 
     lines.push({ id: "sep2", type: "log", text: "" });
     if (failed > 0) {
@@ -84,19 +91,20 @@ function buildTestLines(testOutput: string, analysis: AnalysisResult, framework:
     lines.push({ id: "h1", type: "log", text: `[INFO] -------------------------------------------------------` });
     lines.push({ id: "h2", type: "log", text: `[INFO]  T E S T S` });
     lines.push({ id: "h3", type: "log", text: `[INFO] -------------------------------------------------------` });
-    lines.push({ id: "h4", type: "log", text: `[INFO] Running ${analysis.projectName}Tests` });
+    lines.push({ id: "h4", type: "log", text: `[INFO] Running ${analysis.projectName || "Test"}Tests` });
 
     tests.forEach((test, i) => {
       const pass = seededRandom(i * 137) > 0.12;
       lines.push({
-        id: `t-${i}`, type: pass ? "pass" : "fail",
+        id: `t-${i}`,
+        type: pass ? "pass" : "fail",
         text: `${pass ? "[INFO]" : "[ERROR]"} Tests run: 1, Failures: ${pass ? 0 : 1}, Errors: 0, Skipped: 0, Time elapsed: ${(seededRandom(i) * 0.1 + 0.01).toFixed(3)}s - ${test}`,
         duration: seededRandom(i) * 0.1,
       });
     });
 
-    const passed = lines.filter(l => l.type === "pass").length;
-    const failed = lines.filter(l => l.type === "fail").length;
+    const passed = lines.filter(l => l && l.type === "pass").length;
+    const failed = lines.filter(l => l && l.type === "fail").length;
     lines.push({ id: "sep", type: "log", text: "[INFO]" });
     lines.push({ id: "sum", type: "summary", text: `[INFO] Tests run: ${passed + failed}, Failures: ${failed}, Errors: 0, Skipped: 0` });
     lines.push({ id: "res", type: failed > 0 ? "error" : "pass", text: failed > 0 ? "[ERROR] BUILD FAILURE" : "[INFO] BUILD SUCCESS" });
@@ -120,24 +128,31 @@ function buildTestLines(testOutput: string, analysis: AnalysisResult, framework:
       sTests.forEach((test, i) => {
         const pass = seededRandom((suiteIdx * 100 + i) * 137) > 0.12;
         const dur = Math.round(seededRandom(suiteIdx * 100 + i) * 15 + 1);
-        lines.push({ id: `t-${suiteIdx}-${i}`, type: pass ? "pass" : "fail", text: test, duration: dur });
+        lines.push({ 
+          id: `t-${suiteIdx}-${i}`, 
+          type: pass ? "pass" : "fail", 
+          text: test, 
+          duration: dur 
+        });
       });
     }
 
-    const passed = lines.filter(l => l.type === "pass").length;
-    const failed = lines.filter(l => l.type === "fail").length;
-    const totalDur = lines.filter(l => l.type === "pass" || l.type === "fail").reduce((s, l) => s + (l.duration ?? 0), 0);
+    const passed = lines.filter(l => l && l.type === "pass").length;
+    const failed = lines.filter(l => l && l.type === "fail").length;
+    const totalDur = lines.filter(l => l && (l.type === "pass" || l.type === "fail")).reduce((s, l) => s + (l.duration ?? 0), 0);
 
     lines.push({ id: "sep", type: "log", text: "" });
     lines.push({
-      id: "sum", type: "summary",
+      id: "sum",
+      type: "summary",
       text: framework === "mocha"
         ? `  ${passed} passing (${totalDur}ms)${failed > 0 ? `\n  ${failed} failing` : ""}`
         : `Tests: ${failed > 0 ? `${failed} failed, ` : ""}${passed} passed, ${passed + failed} total\nTime: ${(totalDur / 1000).toFixed(2)}s`,
     });
   }
 
-  return lines;
+  // Filter out any null/undefined values and ensure all have valid types
+  return lines.filter(line => line != null && line.type != null);
 }
 
 export function TestRunnerSimulator({ testOutput, analysis, framework }: TestRunnerSimulatorProps) {
@@ -148,15 +163,32 @@ export function TestRunnerSimulator({ testOutput, analysis, framework }: TestRun
   const termRef = useRef<HTMLDivElement>(null);
 
   const run = () => {
-    const lines = buildTestLines(testOutput, analysis, framework);
-    setAllLines(lines);
-    setVisibleLines([]);
-    setRunning(true);
-    setFinished(false);
+    try {
+      const lines = buildTestLines(testOutput, analysis, framework);
+      // Ensure all lines are valid objects
+      const validLines = lines.filter(line => line != null && typeof line === 'object' && line.type != null);
+      
+      if (validLines.length === 0) {
+        console.warn("No valid test lines generated");
+        validLines.push({ id: "fallback", type: "log", text: "No tests found or invalid test output" });
+      }
+      
+      setAllLines([...validLines]); // Create a new array
+      setVisibleLines([]);
+      setRunning(true);
+      setFinished(false);
+    } catch (error) {
+      console.error("Error building test lines:", error);
+      setAllLines([{ id: "error", type: "error", text: "Failed to parse test output" }]);
+      setVisibleLines([]);
+      setRunning(true);
+      setFinished(false);
+    }
   };
 
   useEffect(() => {
     if (!running || allLines.length === 0) return;
+    
     let idx = 0;
     const interval = setInterval(() => {
       if (idx >= allLines.length) {
@@ -165,16 +197,32 @@ export function TestRunnerSimulator({ testOutput, analysis, framework }: TestRun
         clearInterval(interval);
         return;
       }
-      setVisibleLines(prev => [...prev, allLines[idx]]);
+      
+      const currentLine = allLines[idx];
+      // Only add if the line is valid
+      if (currentLine && currentLine.type) {
+        setVisibleLines(prev => {
+          // Check if we already have this line to avoid duplicates
+          if (prev.some(line => line.id === currentLine.id)) {
+            return prev;
+          }
+          return [...prev, currentLine];
+        });
+      }
+      
       idx++;
-      termRef.current?.scrollTo({ top: termRef.current.scrollHeight, behavior: "smooth" });
+      if (termRef.current) {
+        termRef.current.scrollTo({ top: termRef.current.scrollHeight, behavior: "smooth" });
+      }
     }, 60);
+    
     return () => clearInterval(interval);
   }, [running, allLines]);
 
-  const passed = visibleLines.filter(l => l.type === "pass").length;
-  const failed = visibleLines.filter(l => l.type === "fail").length;
-  const allPass = finished && failed === 0;
+  // Safely calculate passed/failed counts
+  const passed = visibleLines.filter(l => l && l.type === "pass").length;
+  const failed = visibleLines.filter(l => l && l.type === "fail").length;
+  const allPass = finished && failed === 0 && passed > 0;
   const allFail = finished && failed > 0;
 
   return (
@@ -222,43 +270,53 @@ export function TestRunnerSimulator({ testOutput, analysis, framework }: TestRun
             </div>
           )}
 
-          {visibleLines.map(line => {
-            if (line.type === "suite") return (
-              <div key={line.id} className="text-white/70 mt-3 mb-1 font-semibold">
-                <span className="text-white/30 mr-2">●</span>{line.text}
-              </div>
-            );
-            if (line.type === "pass") return (
-              <div key={line.id} className="flex items-center gap-2 pl-4 py-0.5">
-                <span className="text-[#00ff9d] text-xs flex-shrink-0">✓</span>
-                <span className="text-white/60">{line.text}</span>
-                {line.duration !== undefined && (
-                  <span className="text-white/20 text-[10px] ml-auto flex-shrink-0">{line.duration}ms</span>
-                )}
-              </div>
-            );
-            if (line.type === "fail") return (
-              <div key={line.id} className="flex items-center gap-2 pl-4 py-0.5">
-                <span className="text-[#ef4444] text-xs flex-shrink-0">✗</span>
-                <span className="text-[#ef4444]/80">{line.text}</span>
-                {line.duration !== undefined && (
-                  <span className="text-[#ef4444]/40 text-[10px] ml-auto flex-shrink-0">{line.duration}ms</span>
-                )}
-              </div>
-            );
-            if (line.type === "summary") return (
-              <div key={line.id} className="mt-3 pt-3 border-t border-white/8">
-                {line.text.split("\n").map((t, i) => (
-                  <p key={i} className={`text-xs ${t.includes("fail") || t.includes("FAIL") || t.includes("Failure") ? "text-[#ef4444]" : "text-[#00ff9d]"} font-semibold`}>{t}</p>
-                ))}
-              </div>
-            );
-            if (line.type === "error") return (
-              <div key={line.id} className="text-[#ef4444] font-bold mt-2">{line.text}</div>
-            );
-            return (
-              <div key={line.id} className={`py-0.5 ${line.text === "" ? "h-2" : "text-white/30"}`}>{line.text}</div>
-            );
+          {visibleLines.filter(line => line && line.type).map(line => {
+            if (!line || !line.type) return null;
+            
+            switch (line.type) {
+              case "suite":
+                return (
+                  <div key={line.id} className="text-white/70 mt-3 mb-1 font-semibold">
+                    <span className="text-white/30 mr-2">●</span>{line.text}
+                  </div>
+                );
+              case "pass":
+                return (
+                  <div key={line.id} className="flex items-center gap-2 pl-4 py-0.5">
+                    <span className="text-[#00ff9d] text-xs flex-shrink-0">✓</span>
+                    <span className="text-white/60">{line.text}</span>
+                    {line.duration !== undefined && (
+                      <span className="text-white/20 text-[10px] ml-auto flex-shrink-0">{line.duration}ms</span>
+                    )}
+                  </div>
+                );
+              case "fail":
+                return (
+                  <div key={line.id} className="flex items-center gap-2 pl-4 py-0.5">
+                    <span className="text-[#ef4444] text-xs flex-shrink-0">✗</span>
+                    <span className="text-[#ef4444]/80">{line.text}</span>
+                    {line.duration !== undefined && (
+                      <span className="text-[#ef4444]/40 text-[10px] ml-auto flex-shrink-0">{line.duration}ms</span>
+                    )}
+                  </div>
+                );
+              case "summary":
+                return (
+                  <div key={line.id} className="mt-3 pt-3 border-t border-white/8">
+                    {line.text.split("\n").map((t, i) => (
+                      <p key={i} className={`text-xs ${t.includes("fail") || t.includes("FAIL") || t.includes("Failure") ? "text-[#ef4444]" : "text-[#00ff9d]"} font-semibold`}>{t}</p>
+                    ))}
+                  </div>
+                );
+              case "error":
+                return (
+                  <div key={line.id} className="text-[#ef4444] font-bold mt-2">{line.text}</div>
+                );
+              default:
+                return (
+                  <div key={line.id} className={`py-0.5 ${line.text === "" ? "h-2" : "text-white/30"}`}>{line.text}</div>
+                );
+            }
           })}
 
           {running && (
