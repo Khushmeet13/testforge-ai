@@ -1,43 +1,94 @@
 import { useState } from "react";
 import { UploadZone } from "./components/UploadZone";
+import { FileSelector } from "./components/FileSelector";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { TestOutputPanel } from "./components/TestOutputPanel";
 import { Header } from "./components/Header";
 import { GitHubIntegration } from "./components/GitHubIntegration";
-import { AppState, AnalysisResult, TestFramework } from "./types";
+import { AppState, AnalysisResult, TestFramework, ExtractedFile } from "./types";
 import { FiFolder, FiGithub } from "react-icons/fi";
+import { analyzeProject } from "./utils/analyzer";
 
 type EntryMode = "upload" | "github";
+type UploadStep = "upload" | "select" | "analyzing" | "analyzed" | "generating" | "done";
 
 export default function App() {
   const [state, setState] = useState<AppState>("idle");
+  const [uploadStep, setUploadStep] = useState<UploadStep>("upload");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [testOutput, setTestOutput] = useState<string>("");
   const [selectedFramework, setSelectedFramework] = useState<TestFramework | "">("");
   const [projectName, setProjectName] = useState<string>("");
+  const [extractedFiles, setExtractedFiles] = useState<ExtractedFile[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [entryMode, setEntryMode] = useState<EntryMode>("upload");
+
+  const handleFilesExtracted = (files: ExtractedFile[]) => {
+    setExtractedFiles(files);
+    setUploadStep("select");
+  };
+
+  const handleFilesSelected = async (selectedPaths: string[]) => {
+  setSelectedFiles(selectedPaths);
+  setUploadStep("analyzing");
+  
+  try {
+    // Now analyze only the selected files
+    const selectedFilesData = extractedFiles.filter(f => 
+      selectedPaths.includes(f.path)
+    );
+    
+    // Convert to format expected by analyzer
+    const filesForAnalysis = selectedFilesData.map(f => ({
+      path: f.path,
+      name: f.name,
+      content: f.content,
+      language: f.language,
+      size: f.size,
+    }));
+    
+    const analysis = analyzeProject(filesForAnalysis, projectName);
+    handleAnalysisComplete(analysis);
+  } catch (err) {
+    console.error("Analysis failed:", err);
+    setUploadStep("select");
+  }
+};
 
   const handleAnalysisComplete = (result: AnalysisResult) => {
     setAnalysis(result);
     setSelectedFramework(result.suggestedFramework);
     setState("analyzed");
+    setUploadStep("analyzed");
   };
 
   const handleTestsGenerated = (tests: string) => {
     setTestOutput(tests);
     setState("done");
+    setUploadStep("done");
   };
 
   const handleReset = () => {
     setState("idle");
+    setUploadStep("upload");
     setAnalysis(null);
     setTestOutput("");
     setSelectedFramework("");
     setProjectName("");
+    setExtractedFiles([]);
+    setSelectedFiles([]);
+  };
+
+  const handleBackToSelect = () => {
+    setUploadStep("select");
+    setState("idle");
+    setAnalysis(null);
+    setTestOutput("");
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white font-mono overflow-x-hidden">
+      {/* Background effects (unchanged) */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-[#00ff9d]/5 blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-[#7b2fff]/5 blur-[100px]" />
@@ -46,29 +97,38 @@ export default function App() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Header onReset={handleReset} showReset={state !== "idle"} />
+        <Header 
+          onReset={handleReset} 
+          showReset={uploadStep !== "upload"} 
+          onBack={uploadStep !== "upload" && uploadStep !== "select" ? handleBackToSelect : undefined}
+          currentStep={uploadStep}
+        />
 
         <main className="mt-5">
-          {state === "idle" && (
+          {/* Entry Mode Selection (only on initial upload) */}
+          {uploadStep === "upload" && (
             <div className="space-y-6">
-              {/* Entry mode toggle */}
               <div className="flex justify-center">
                 <div className="flex gap-1 p-1 bg-white/[0.04] border border-white/10 rounded-lg">
                   <button onClick={() => setEntryMode("upload")}
                     className={`px-5 py-1.5 text-sm rounded-md transition-all flex items-center gap-2 ${entryMode === "upload" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`}>
-                       <FiFolder className="text-base" />
-                     Upload ZIP
+                    <FiFolder className="text-base" />
+                    Upload ZIP
                   </button>
                   <button onClick={() => setEntryMode("github")}
                     className={`px-5 py-1.5 text-sm rounded-md transition-all flex items-center gap-2 ${entryMode === "github" ? "bg-[#6e40c9]/30 text-[#6e40c9]" : "text-white/40 hover:text-white/70"}`}>
-                        <FiGithub className="text-base" />
-                     Connect GitHub
+                    <FiGithub className="text-base" />
+                    Connect GitHub
                   </button>
                 </div>
               </div>
 
               {entryMode === "upload" ? (
-                <UploadZone onAnalysisComplete={handleAnalysisComplete} onStateChange={setState} setProjectName={setProjectName} />
+                <UploadZone 
+                  onFilesExtracted={handleFilesExtracted}
+                  setProjectName={setProjectName}
+                  onStateChange={setState}
+                />
               ) : (
                 <div className="max-w-2xl mx-auto p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
                   <GitHubIntegration
@@ -82,33 +142,64 @@ export default function App() {
             </div>
           )}
 
-          {state === "analyzing" && <AnalyzingScreen />}
-
-          {(state === "analyzed" || state === "generating") && analysis && (
-            <AnalysisPanel
-              analysis={analysis}
-              selectedFramework={selectedFramework}
-              setSelectedFramework={setSelectedFramework}
+          {/* File Selection Step */}
+          {uploadStep === "select" && (
+            <FileSelector
+              files={extractedFiles}
               projectName={projectName}
-              onTestsGenerated={handleTestsGenerated}
-              onStateChange={setState}
-              isGenerating={state === "generating"}
+              onFilesSelected={handleFilesSelected}
+              onBack={() => {
+                setUploadStep("upload");
+                setExtractedFiles([]);
+              }}
             />
           )}
 
-          {state === "done" && analysis && (
+          {/* Analyzing Screen */}
+          {uploadStep === "analyzing" && <AnalyzingScreen />}
+
+          {/* Analysis and Generation */}
+          {(uploadStep === "analyzed" || uploadStep === "generating") && analysis && (
+            <div className="space-y-4">
+              {/* Selected Files Info */}
+              <div className="p-3 bg-white/[0.03] border border-white/10 rounded-lg">
+                <p className="text-white/40 text-xs">
+                  🎯 Generating tests for {selectedFiles.length} selected file(s)
+                </p>
+              </div>
+              <AnalysisPanel
+                analysis={analysis}
+                selectedFramework={selectedFramework}
+                setSelectedFramework={setSelectedFramework}
+                projectName={projectName}
+                onTestsGenerated={handleTestsGenerated}
+                onStateChange={setState}
+                isGenerating={uploadStep === "generating"}
+                selectedFiles={selectedFiles}
+              />
+            </div>
+          )}
+
+          {/* Test Output */}
+          {uploadStep === "done" && analysis && (
             <TestOutputPanel
               testOutput={testOutput}
               analysis={analysis}
               framework={selectedFramework as TestFramework}
               projectName={projectName}
-              onRegenerate={() => setState("analyzed")}
+              onRegenerate={() => setUploadStep("analyzed")}
               onNewAnalysis={(newAnalysis) => {
                 setAnalysis(newAnalysis);
                 setProjectName(newAnalysis.projectName);
                 setSelectedFramework(newAnalysis.suggestedFramework);
-                setState("analyzed");
+                setUploadStep("analyzed");
               }}
+              sourceFiles={extractedFiles.reduce((acc, file) => ({
+                ...acc,
+                [file.path]: file.content
+              }), {})}
+              selectedFiles={selectedFiles}
+              onBackToSelect={handleBackToSelect}
             />
           )}
         </main>
@@ -124,15 +215,18 @@ function AnalyzingScreen() {
         <div className="absolute inset-0 border-2 border-[#00ff9d]/20 rounded-full animate-ping" />
         <div className="absolute inset-2 border-2 border-[#00ff9d]/40 rounded-full animate-spin" style={{ animationDuration: "3s" }} />
         <div className="absolute inset-4 border-t-2 border-[#00ff9d] rounded-full animate-spin" style={{ animationDuration: "1s" }} />
-        <div className="absolute inset-0 flex items-center justify-center"><span className="text-[#00ff9d] text-2xl">⚡</span></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[#00ff9d] text-2xl">⚡</span>
+        </div>
       </div>
       <div className="text-center">
-        <p className="text-[#00ff9d] text-lg tracking-widest uppercase">Analyzing Code</p>
-        <p className="text-white/40 text-sm mt-2 tracking-wide">Scanning project structure...</p>
+        <p className="text-[#00ff9d] text-lg tracking-widest uppercase">Analyzing Selected Files</p>
+        <p className="text-white/40 text-sm mt-2 tracking-wide">Scanning code structure...</p>
       </div>
       <div className="flex gap-1">
-        {[0,1,2,3,4].map(i => (
-          <div key={i} className="w-1.5 h-8 bg-[#00ff9d]/60 rounded-full animate-bounce" style={{ animationDelay: `${i*0.1}s` }} />
+        {[0, 1, 2, 3, 4].map(i => (
+          <div key={i} className="w-1.5 h-8 bg-[#00ff9d]/60 rounded-full animate-bounce" 
+            style={{ animationDelay: `${i * 0.1}s` }} />
         ))}
       </div>
     </div>

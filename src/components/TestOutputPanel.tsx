@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AnalysisResult, TestFramework } from "../types";
 import { CoverageMapPanel } from "./CoverageMapPanel";
 import { MockGenerationPanel } from "./MockGenerationPanel";
@@ -29,6 +29,7 @@ interface TestOutputPanelProps {
   projectName: string;
   onRegenerate: () => void;
   onNewAnalysis?: (a: AnalysisResult) => void;
+  sourceFiles?: Record<string, string>;
 }
 
 const FRAMEWORK_EXTENSIONS: Record<TestFramework, string> = {
@@ -83,12 +84,56 @@ const TAB_GROUPS = [
 ];
 
 export function TestOutputPanel({
-  testOutput: initialTestOutput, analysis, framework, projectName, onRegenerate, onNewAnalysis,
+  testOutput: initialTestOutput, analysis, framework, projectName, onRegenerate, onNewAnalysis, sourceFiles = {},
 }: TestOutputPanelProps) {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("code");
   const [testOutput, setTestOutput] = useState(initialTestOutput);
   const codeRef = useRef<HTMLPreElement>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(initialTestOutput);
+  const [codeWarning, setCodeWarning] = useState("");
+
+  // testOutput change hone par draft bhi update karo
+  useEffect(() => { setEditDraft(testOutput); }, [testOutput]);
+  useEffect(() => {
+    if (testOutput) {
+      const completeness = checkCodeCompleteness(testOutput, framework);
+      if (!completeness.isComplete) {
+        setCodeWarning(completeness.warning);
+      } else {
+        setCodeWarning("");
+      }
+    }
+  }, [testOutput, framework]);
+
+  function checkCodeCompleteness(code: string, framework: TestFramework): { isComplete: boolean; warning: string } {
+    const issues: string[] = [];
+
+    // Check for truncation patterns
+    if (/\.\.\.\s*$/.test(code)) {
+      issues.push("Code appears truncated with '...'");
+    }
+
+    // Check bracket balance
+    const openBraces = (code.match(/\{/g) || []).length;
+    const closeBraces = (code.match(/\}/g) || []).length;
+    if (openBraces !== closeBraces) {
+      issues.push(`Unbalanced braces (${openBraces} open, ${closeBraces} close)`);
+    }
+
+    // Check for incomplete tests
+    const tests = code.match(/\bit\(|def test_|@Test\b/g) || [];
+    const assertions = code.match(/\bexpect\(|assert\b|\.should\b/g) || [];
+    if (tests.length > 0 && assertions.length === 0) {
+      issues.push("Tests found but no assertions detected");
+    }
+
+    return {
+      isComplete: issues.length === 0,
+      warning: issues.join("; "),
+    };
+  }
 
   const filename =
     projectName.replace(".zip", "").replace(/\s+/g, "_").toLowerCase() +
@@ -177,13 +222,57 @@ export function TestOutputPanel({
         {activeTab === "code" && (
           <div>
             <div className="flex items-center gap-2 px-4 py-2.5 bg-[#111118] border-b border-white/8 rounded-t-xl">
-              <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60" /><div className="w-3 h-3 rounded-full bg-yellow-500/60" /><div className="w-3 h-3 rounded-full bg-green-500/60" /></div>
+              <div className="flex gap-1.5">...</div>
               <span className="text-white/40 text-xs ml-2 font-mono">{filename}</span>
-              <span className="ml-auto text-white/20 text-xs">{framework}</span>
+              <span className="ml-auto flex items-center gap-2">
+                <span className="text-white/20 text-xs">{framework}</span>
+
+                {/* Edit / Save / Cancel buttons */}
+                {!isEditing ? (
+                  <button
+                    onClick={() => { setEditDraft(testOutput); setIsEditing(true); }}
+                    className="px-2.5 py-1 text-[11px] text-blue-400 border border-blue-400/30 rounded-md hover:bg-blue-400/10 transition-all"
+                  >
+                    Edit
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => { setTestOutput(editDraft); setIsEditing(false); }}
+                      className="px-2.5 py-1 text-[11px] text-[#00ff9d] border border-[#00ff9d]/30 rounded-md hover:bg-[#00ff9d]/10 transition-all"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setEditDraft(testOutput); setIsEditing(false); }}
+                      className="px-2.5 py-1 text-[11px] text-red-400 border border-red-400/20 rounded-md hover:bg-red-400/10 transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+              </span>
             </div>
+
             <div className="bg-[#0d0d14] border border-t-0 border-white/8 rounded-b-xl overflow-auto max-h-[70vh]">
-              <pre ref={codeRef} className="text-sm leading-relaxed p-6 font-mono" dangerouslySetInnerHTML={{ __html: highlighted }} />
+              {isEditing ? (
+                <textarea
+                  value={editDraft}
+                  onChange={(e) => setEditDraft(e.target.value)}
+                  className="w-full bg-transparent text-sm leading-relaxed p-6 font-mono text-[#abb2bf] outline-none resize-y min-h-[400px]"
+                  spellCheck={false}
+                />
+              ) : (
+                <pre ref={codeRef} className="text-sm leading-relaxed p-6 font-mono"
+                  dangerouslySetInnerHTML={{ __html: highlighted }} />
+              )}
             </div>
+
+            {isEditing && (
+              <p className="text-xs text-white/20 mt-1.5 px-1">
+                Editing mode — "Save" karoge to changes dusre tabs mein bhi reflect honge
+              </p>
+            )}
           </div>
         )}
         {activeTab === "coverage" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><CoverageMapPanel analysis={analysis} testOutput={testOutput} /></div>}
@@ -196,7 +285,7 @@ export function TestOutputPanel({
         {activeTab === "filetree" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><FileTreeExplorer analysis={analysis} testOutput={testOutput} /></div>}
         {activeTab === "vscode" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><VSCodePreview analysis={analysis} testOutput={testOutput} framework={framework} projectName={projectName} /></div>}
         {activeTab === "diff" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DiffViewer analysis={analysis} /></div>}
-        {activeTab === "runner" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><TestRunnerSimulator testOutput={testOutput} analysis={analysis} framework={framework} /></div>}
+        {activeTab === "runner" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><TestRunnerSimulator testOutput={testOutput} analysis={analysis} framework={framework} sourceFiles={sourceFiles} /></div>}
         {activeTab === "github" && (
           <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
             <GitHubIntegration
@@ -215,6 +304,20 @@ export function TestOutputPanel({
           </div>
         )}
       </div>
+
+      {codeWarning && (
+        <div className="mt-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <p className="text-yellow-400 text-sm flex items-center gap-2">
+            <span>⚠️</span> {codeWarning}
+          </p>
+          <button
+            onClick={onRegenerate}
+            className="mt-2 text-xs text-yellow-400/80 hover:text-yellow-400 underline"
+          >
+            Regenerate to fix
+          </button>
+        </div>
+      )}
     </div>
   );
 }

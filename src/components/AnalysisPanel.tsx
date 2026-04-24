@@ -10,6 +10,7 @@ interface AnalysisPanelProps {
   onTestsGenerated: (tests: string) => void;
   onStateChange: (state: AppState) => void;
   isGenerating: boolean;
+  selectedFiles: string[];
 }
 
 const FRAMEWORKS: { id: TestFramework; label: string; lang: string; color: string }[] = [
@@ -51,6 +52,7 @@ export function AnalysisPanel({
   onTestsGenerated,
   onStateChange,
   isGenerating,
+  selectedFiles
 }: AnalysisPanelProps) {
   const [streamedText, setStreamedText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function AnalysisPanel({
     onStateChange("generating");
 
     try {
-      const tests = await generateTests(analysis, selectedFramework, (chunk) => {
+      const tests = await generateTests(analysis, selectedFramework, selectedFiles, (chunk) => {
         setStreamedText((prev) => prev + chunk);
       });
       onTestsGenerated(tests);

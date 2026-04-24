@@ -1,4 +1,4 @@
-export type AppState = "idle" | "analyzing" | "analyzed" | "generating" | "done";
+export type AppState = "idle" | "uploading" | "analyzing" | "analyzed" | "generating" | "done";
 export type ProjectType = "nodejs" | "python" | "java" | "typescript" | "unknown";
 export type TestFramework = "jest" | "pytest" | "junit" | "mocha" | "vitest" | "rspec" | "react-testing-library" | "supertest" | "cypress";
 export type CICDPlatform = "github" | "gitlab" | "jenkins";
@@ -62,3 +62,11 @@ export interface SplitPaneFile { path: string; content: string; language: string
 // ── Export Formats ────────────────────────────────────────────────────────────
 export type ExportFormat = "zip" | "pdf" | "gist";
 export interface ExportResult { format: ExportFormat; url?: string; filename?: string; }
+
+export interface ExtractedFile {
+  path: string;
+  name: string;
+  language: string;
+  content: string;
+  size: number;
+}
