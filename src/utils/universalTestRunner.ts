@@ -405,10 +405,10 @@ require('@testing-library/jest-dom');
         await wcInstance.fs.rm('/babel.config.cjs', { force: true }).catch(() => { });
 
         const mount = buildMountStructure(allFiles);
-        onOutput('\n📂 Mounted files:\n');
-        for (const key of Object.keys(allFiles)) {
-            onOutput(` - ${key}\n`);
-        }
+        // onOutput('\n📂 Mounted files:\n');
+        // for (const key of Object.keys(allFiles)) {
+        //     onOutput(` - ${key}\n`);
+        // }
         await wcInstance.mount(mount);
         await wcInstance.fs.writeFile('/babel.config.cjs', `
 module.exports = {
@@ -435,7 +435,7 @@ require('@testing-library/jest-dom');
 `);
 
 const debugProc = await wcInstance.spawn('cat', ['/babel.config.cjs']);
-debugProc.output.pipeTo(new WritableStream({ write: (chunk) => onOutput(chunk) }));
+//debugProc.output.pipeTo(new WritableStream({ write: (chunk) => onOutput(chunk) }));
 await debugProc.exit;
 
         // const mount = buildMountStructure(allFiles);
@@ -554,7 +554,7 @@ export async function runTests(
         )
     );
     console.log("SOURCE FILES RECEIVED:", Object.keys(sourceFiles));
-    onOutput(`Generated Test File:\n${cleanCode}\n\n`);
+    // onOutput(`Generated Test File:\n${cleanCode}\n\n`);
 
     onOutput(`\n${'═'.repeat(50)}\n🔬 Test Runner: ${framework.toUpperCase()}\n${'═'.repeat(50)}\n\n`);
 
