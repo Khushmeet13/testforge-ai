@@ -1,9 +1,11 @@
 interface HeaderProps {
   onReset: () => void;
   showReset: boolean;
+  onBack?: () => void;  // Optional since it's conditional
+  currentStep: string;  // Or more specific type like "upload" | "select" | "processing" | "complete"
 }
 
-export function Header({ onReset, showReset }: HeaderProps) {
+export function Header({ onReset, showReset, onBack, currentStep }: HeaderProps) {
   return (
     <header className="flex items-center justify-between">
       <div className="flex items-center gap-4">
@@ -42,6 +44,26 @@ export function Header({ onReset, showReset }: HeaderProps) {
             New Project
           </button>
         )}
+        
+        {/* Optional: Add back button if onBack is provided */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-white/60 hover:text-white border border-white/10 hover:border-white/30 rounded-lg transition-all duration-200 hover:bg-white/5"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back
+          </button>
+        )}
+        
+        {/* Optional: Display current step if needed */}
+        {/* {currentStep && (
+          <div className="text-white/40 text-xs">
+            Step: {currentStep}
+          </div>
+        )} */}
       </div>
     </header>
   );

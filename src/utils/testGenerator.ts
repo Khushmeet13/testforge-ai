@@ -1,255 +1,343 @@
 import { AnalysisResult, TestFramework } from "../types";
 
+// Framework-specific syntax configurations
+function getFrameworkSyntax(framework: TestFramework) {
+  const configs = {
+    jest: {
+      name: "Jest",
+      testFunc: "describe() / it()",
+      assertion: "expect(value).toBe(expected)",
+      mockFunc: "jest.fn()",
+      asyncPattern: "async/await",
+      importLine: "",
+      example: `describe('Pure Functions', () => {
+  // DEFINE functions first
+  function validateEmail(email) {
+    if (!email) return false;
+    return email.includes('@');
+  }
+  
+  function formatCard(num) {
+    if (!num) return '';
+    const d = num.replace(/\D/g, '');
+    return d.match(/.{1,4}/g)?.join(' ') || d;
+  }
+  
+  // THEN write tests
+  describe('validateEmail', () => {
+    it('valid email', () => {
+      expect(validateEmail('test@test.com')).toBe(true);
+    });
+    it('empty email', () => {
+      expect(validateEmail('')).toBe(false);
+    });
+    it('null email', () => {
+      expect(validateEmail(null)).toBe(false);
+    });
+  });
+  
+  describe('formatCard', () => {
+    it('formats 16 digits', () => {
+      expect(formatCard('1234567890123456')).toBe('1234 5678 9012 3456');
+    });
+    it('empty input', () => {
+      expect(formatCard('')).toBe('');
+    });
+  });
+});`
+    },
+    vitest: {
+      name: "Vitest",
+      testFunc: "describe() / it()",
+      assertion: "expect(value).toBe(expected)",
+      mockFunc: "vi.fn()",
+      asyncPattern: "async/await",
+      importLine: "import { describe, it, expect, vi } from 'vitest';",
+      example: `import { describe, it, expect, vi } from 'vitest';
+
+describe('Pure Functions', () => {
+  function validateEmail(email) {
+    if (!email) return false;
+    return email.includes('@');
+  }
+  
+  describe('validateEmail', () => {
+    it('valid email', () => {
+      expect(validateEmail('test@test.com')).toBe(true);
+    });
+    it('empty email', () => {
+      expect(validateEmail('')).toBe(false);
+    });
+  });
+});`
+    },
+    mocha: {
+      name: "Mocha",
+      testFunc: "describe() / it()",
+      assertion: "expect(value).to.equal(expected)",
+      mockFunc: "sinon.stub()",
+      asyncPattern: "async/await or done()",
+      importLine: "const { expect } = require('chai');",
+      example: `const { expect } = require('chai');
+
+describe('Pure Functions', () => {
+  function validateEmail(email) {
+    if (!email) return false;
+    return email.includes('@');
+  }
+  
+  describe('validateEmail', () => {
+    it('valid email', () => {
+      expect(validateEmail('test@test.com')).to.equal(true);
+    });
+    it('empty email', () => {
+      expect(validateEmail('')).to.equal(false);
+    });
+  });
+});`
+    },
+    pytest: {
+      name: "Pytest",
+      testFunc: "def test_function_name():",
+      assertion: "assert value == expected",
+      mockFunc: "unittest.mock.Mock()",
+      asyncPattern: "pytest.mark.asyncio",
+      importLine: "import pytest",
+      example: `import pytest
+
+def validate_email(email):
+    if not email:
+        return False
+    return '@' in email
+
+def test_valid_email():
+    assert validate_email('test@test.com') == True
+
+def test_empty_email():
+    assert validate_email('') == False
+
+def test_none_email():
+    assert validate_email(None) == False`
+    },
+    junit: {
+      name: "JUnit 5",
+      testFunc: "@Test void methodName()",
+      assertion: "assertEquals(expected, actual)",
+      mockFunc: "Mockito.mock()",
+      asyncPattern: "CompletableFuture",
+      importLine: "import org.junit.jupiter.api.*;\nimport static org.junit.jupiter.api.Assertions.*;",
+      example: `import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class ValidationTest {
+    
+    static boolean validateEmail(String email) {
+        if (email == null || email.isEmpty()) return false;
+        return email.contains("@");
+    }
+    
+    @Test
+    void validEmailReturnsTrue() {
+        assertTrue(validateEmail("test@test.com"));
+    }
+    
+    @Test
+    void emptyEmailReturnsFalse() {
+        assertFalse(validateEmail(""));
+    }
+    
+    @Test
+    void nullEmailReturnsFalse() {
+        assertFalse(validateEmail(null));
+    }
+}`
+    },
+    rspec: {
+      name: "RSpec",
+      testFunc: "describe / context / it",
+      assertion: "expect(value).to eq(expected)",
+      mockFunc: "double() or allow().to receive()",
+      asyncPattern: "expect async",
+      importLine: "require 'spec_helper'",
+      example: `require 'spec_helper'
+
+def validate_email(email)
+  return false if email.nil? || email.empty?
+  email.include?('@')
+end
+
+describe '#validate_email' do
+  it 'returns true for valid email' do
+    expect(validate_email('test@test.com')).to eq(true)
+  end
+  
+  it 'returns false for empty' do
+    expect(validate_email('')).to eq(false)
+  end
+  
+  it 'returns false for nil' do
+    expect(validate_email(nil)).to eq(false)
+  end
+end`
+    },
+    "react-testing-library": {
+      name: "React Testing Library",
+      testFunc: "describe() / it()",
+      assertion: "expect(value).toBe(expected)",
+      mockFunc: "jest.fn()",
+      asyncPattern: "async/await",
+      importLine: "",
+      example: `describe('Pure Functions', () => {
+  function validateForm(data) {
+    if (!data.name) return { valid: false, error: 'Name required' };
+    if (!data.email) return { valid: false, error: 'Email required' };
+    return { valid: true };
+  }
+  
+  describe('validateForm', () => {
+    it('validates complete data', () => {
+      expect(validateForm({ name: 'John', email: 'john@test.com' }))
+        .toEqual({ valid: true });
+    });
+    
+    it('rejects missing name', () => {
+      expect(validateForm({ email: 'john@test.com' }))
+        .toEqual({ valid: false, error: 'Name required' });
+    });
+  });
+});`
+    },
+    supertest: {
+      name: "Supertest",
+      testFunc: "describe() / it()",
+      assertion: "expect(value).toBe(expected)",
+      mockFunc: "jest.fn()",
+      asyncPattern: "async/await",
+      importLine: "",
+      example: `describe('API Logic', () => {
+  function validateBody(data) {
+    if (!data.email) return { error: 'Email required' };
+    return { valid: true };
+  }
+  
+  describe('validateBody', () => {
+    it('accepts valid data', () => {
+      expect(validateBody({ email: 'a@b.c' })).toEqual({ valid: true });
+    });
+    it('rejects missing email', () => {
+      expect(validateBody({})).toEqual({ error: 'Email required' });
+    });
+  });
+});`
+    },
+    cypress: {
+      name: "Cypress",
+      testFunc: "describe() / it()",
+      assertion: "expect(value).to.equal(expected)",
+      mockFunc: "cy.stub()",
+      asyncPattern: "cy.wrap()",
+      importLine: "",
+      example: `describe('Pure Functions', () => {
+  function calculateTotal(items, discount = 0) {
+    if (!items?.length) return 0;
+    const sum = items.reduce((s, i) => s + i.price, 0);
+    return sum * (1 - discount / 100);
+  }
+  
+  describe('calculateTotal', () => {
+    it('calculates without discount', () => {
+      expect(calculateTotal([{ price: 100 }])).to.equal(100);
+    });
+    it('applies discount', () => {
+      expect(calculateTotal([{ price: 100 }], 20)).to.equal(80);
+    });
+    it('handles empty', () => {
+      expect(calculateTotal([])).to.equal(0);
+    });
+  });
+});`
+    }
+  };
+  return configs[framework];
+}
+
 function buildSmartPrompt(analysis: AnalysisResult, framework: TestFramework, selectedFiles: string[]): string {
   
-  // Get actual source code of selected files
+  const syntax = getFrameworkSyntax(framework);
+  
   const sourceCode = analysis.files
     .filter(f => selectedFiles.some(sf => f.path.includes(sf)))
     .map(f => `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📄 FILE: ${f.path} (${f.language})
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${f.content}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${'─'.repeat(50)}
+📄 ${f.path} (${f.language})
+${'─'.repeat(50)}
+${f.content.slice(0, 2500)}
+${'─'.repeat(50)}
 `).join("\n");
 
-  // Extract function details
   const functionDetails = analysis.functions
     .filter(f => selectedFiles.some(sf => f.file.includes(sf)))
-    .map(f => `• ${f.name}(${f.params.join(", ")})${f.isAsync ? " [async]" : ""}${f.isExported ? " [exported]" : ""}`)
+    .map(f => `• ${f.name}(${f.params.join(", ")})${f.isAsync ? " [async]" : ""}`)
     .join("\n");
 
-  const endpointDetails = analysis.apiEndpoints
-    .filter(e => selectedFiles.some(sf => e.file.includes(sf)))
-    .map(e => `• ${e.method} ${e.path}`)
-    .join("\n");
-
-  return `You are an EXPERT Test Engineer. Your job is to test the FUNCTIONALITY of this project.
+  return `Generate ${syntax.name} test. PURE FUNCTIONS ONLY.
 
 ═══════════════════════════════════════════
-📋 PROJECT INFORMATION
+${syntax.name.toUpperCase()} | ${analysis.projectName} | ${analysis.languages.join(", ")}
 ═══════════════════════════════════════════
-Project: ${analysis.projectName}
-Type: ${analysis.projectType}
-Framework: ${framework}
-Languages: ${analysis.languages.join(", ")}
-Dependencies: ${analysis.dependencies.slice(0, 10).join(", ") || "None detected"}
+Functions: ${functionDetails || "None"}
 
 ═══════════════════════════════════════════
-🔍 DISCOVERED FUNCTIONS & ENDPOINTS
-═══════════════════════════════════════════
-Functions Found:
-${functionDetails || "• No exported functions detected"}
-
-API Endpoints:
-${endpointDetails || "• No API endpoints detected"}
-
-═══════════════════════════════════════════
-📝 COMPLETE SOURCE CODE TO TEST
+📝 SOURCE
 ═══════════════════════════════════════════
 ${sourceCode}
 
 ═══════════════════════════════════════════
-🎯 YOUR MISSION
+🔴 RULE #1: DEFINE FUNCTIONS BEFORE TESTS
 ═══════════════════════════════════════════
 
-Analyze the source code above and generate tests that verify ACTUAL functionality.
+You MUST define every function BEFORE calling it in tests.
 
-═══════════════════════════════════════════
-📊 TEST GENERATION STRATEGY
-═══════════════════════════════════════════
-
-1️⃣ EXTRACT PURE LOGIC from the source code:
-   - Take ALL functions, handlers, utilities
-   - Copy them AS-IS into the test file
-   - DO NOT import them - copy the actual code
-   
-2️⃣ TEST THE EXTRACTED FUNCTIONS:
-   - Happy path (normal usage)
-   - Edge cases (null, undefined, empty)
-   - Error conditions
-   - Boundary values
-   - Invalid inputs
-
-3️⃣ FOR REACT COMPONENTS:
-   - Extract event handlers as standalone functions
-   - Extract state update logic
-   - Extract data transformations
-   - Extract validation functions
-   - Extract utility functions from the component
-   
-4️⃣ FOR API/ENDPOINTS:
-   - Extract request/response handling logic
-   - Test data validation
-   - Test error handling
-   - Test response formatting
-
-═══════════════════════════════════════════
-✅ CORRECT EXAMPLE - WHAT TO GENERATE
-═══════════════════════════════════════════
-
-If the source code has this React component:
-\`\`\`javascript
-function EventListings({ events, onSelect }) {
-  const [filter, setFilter] = useState('');
-  
-  function handleEventClick(event) {
-    if (!event || !event.id) return;
-    onSelect(event);
+✅ CORRECT:
+describe('Tests', () => {
+  // 1. DEFINE
+  function formatCard(num) {
+    if (!num) return '';
+    return num.replace(/\D/g, '').match(/.{1,4}/g)?.join(' ') || '';
   }
   
-  const filteredEvents = events.filter(e => 
-    e.name.toLowerCase().includes(filter.toLowerCase())
-  );
-  
-  function validateEvent(event) {
-    if (!event) return false;
-    if (!event.id) return false;
-    if (!event.name) return false;
-    return true;
-  }
-  
-  return (<div>...</div>);
-}
-\`\`\`
-
-YOU SHOULD GENERATE:
-\`\`\`javascript
-describe('EventListings - Functionality Tests', () => {
-  
-  // Copy the actual functions from source
-  function handleEventClick(event, onSelect) {
-    if (!event || !event.id) return;
-    onSelect(event);
-  }
-  
-  function validateEvent(event) {
-    if (!event) return false;
-    if (!event.id) return false;
-    if (!event.name) return false;
-    return true;
-  }
-  
-  function filterEvents(events, filter) {
-    if (!events || !Array.isArray(events)) return [];
-    if (!filter) return events;
-    return events.filter(e => 
-      e.name.toLowerCase().includes(filter.toLowerCase())
-    );
-  }
-  
-  describe('handleEventClick', () => {
-    it('calls onSelect with valid event', () => {
-      const onSelect = jest.fn();
-      const event = { id: 1, name: 'Test' };
-      handleEventClick(event, onSelect);
-      expect(onSelect).toHaveBeenCalledWith(event);
-    });
-    
-    it('does nothing when event is null', () => {
-      const onSelect = jest.fn();
-      handleEventClick(null, onSelect);
-      expect(onSelect).not.toHaveBeenCalled();
-    });
-    
-    it('does nothing when event has no id', () => {
-      const onSelect = jest.fn();
-      handleEventClick({ name: 'No ID' }, onSelect);
-      expect(onSelect).not.toHaveBeenCalled();
-    });
-  });
-  
-  describe('validateEvent', () => {
-    it('returns true for valid event', () => {
-      expect(validateEvent({ id: 1, name: 'Test' })).toBe(true);
-    });
-    
-    it('returns false for null event', () => {
-      expect(validateEvent(null)).toBe(false);
-    });
-    
-    it('returns false when id is missing', () => {
-      expect(validateEvent({ name: 'Test' })).toBe(false);
-    });
-    
-    it('returns false when name is missing', () => {
-      expect(validateEvent({ id: 1 })).toBe(false);
-    });
-  });
-  
-  describe('filterEvents', () => {
-    const mockEvents = [
-      { id: 1, name: 'React Summit' },
-      { id: 2, name: 'Vue Conf' },
-      { id: 3, name: 'Angular Meetup' }
-    ];
-    
-    it('filters events by name', () => {
-      const result = filterEvents(mockEvents, 'react');
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('React Summit');
-    });
-    
-    it('returns all events when filter is empty', () => {
-      const result = filterEvents(mockEvents, '');
-      expect(result).toHaveLength(3);
-    });
-    
-    it('handles null events array', () => {
-      const result = filterEvents(null, 'test');
-      expect(result).toEqual([]);
-    });
-    
-    it('is case insensitive', () => {
-      const result = filterEvents(mockEvents, 'REACT');
-      expect(result).toHaveLength(1);
-    });
+  // 2. THEN TEST
+  it('formats card', () => {
+    expect(formatCard('12345678')).toBe('1234 5678');
   });
 });
-\`\`\`
+
+❌ WRONG (function not defined):
+describe('Tests', () => {
+  it('formats card', () => {
+    expect(formatCard('12345678')).toBe('1234 5678'); // ERROR: formatCard not defined!
+  });
+});
 
 ═══════════════════════════════════════════
-❌ DO NOT GENERATE THIS
+🚫 FORBIDDEN
 ═══════════════════════════════════════════
-
-❌ Don't import from files:
-   import App from './src/App'
-
-❌ Don't mock file paths:
-   jest.mock('./pages/EventListings')
-
-❌ Don't render components:
-   render(<App />)
-
-❌ Don't test JSX/rendering:
-   expect(screen.getByText('...')).toBeInTheDocument()
+require()  import from './'  process.env  global.window
+global.import  jest.mock()  jest.spyOn()  React.useState
+render()  screen.  beforeAll()  afterAll()
+axios  fetch  emailjs  new Razorpay  setTimeout
 
 ═══════════════════════════════════════════
-🔴 CRITICAL RULES
+✅ RULES
 ═══════════════════════════════════════════
+1. DEFINE functions at top of describe block
+2. Only test: input → output functions
+3. 2-3 tests per function
+4. Test: valid, null, empty, edge case
 
-1. COPY functions from source into test file (NO imports)
-2. Test PURE LOGIC - not rendering
-3. No file paths or jest.mock() needed
-4. Each function should have 3-5 tests
-5. Include null/undefined/empty checks
-6. Test async functions with async/await
-7. Use describe/it/expect (Jest globals are available)
-8. Use jest.fn() for callbacks/spies
-9. Write 15-25 total test cases
-10. Group related tests in describe blocks
+${syntax.example}
 
-═══════════════════════════════════════════
-📦 OUTPUT FORMAT
-═══════════════════════════════════════════
-
-Generate ONLY the executable test code.
-NO markdown fences (no \`\`\`)
-NO explanations
-Start directly with:
-describe('...', () => {
-
-Generate the complete test file now:`;
+OUTPUT ONLY CODE. Start: ${syntax.importLine || 'describe('}`;
 }
 
 export async function generateTests(
@@ -261,24 +349,15 @@ export async function generateTests(
   const prompt = buildSmartPrompt(analysis, framework, selectedFiles);
 
   const GEMINI_API_KEY = (import.meta as any).env.VITE_GEMINI_KEY;
-  if (!GEMINI_API_KEY) {
-    throw new Error("VITE_GEMINI_API_KEY is not set in environment variables");
-  }
+  if (!GEMINI_API_KEY) throw new Error("VITE_GEMINI_API_KEY not set");
 
   const GEMINI_API_URL = (import.meta as any).env.VITE_GEMINI_API_URL;
 
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: prompt }],
-        },
-      ],
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 8192,
@@ -286,129 +365,110 @@ export async function generateTests(
         topK: 40,
         stopSequences: [],
       },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_ONLY_HIGH"
-        }
-      ],
     }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API error (${response.status}): ${errorText}`);
-  }
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
 
   const data = await response.json();
   let generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  
-  if (!generatedText) {
-    throw new Error("No code generated from Gemini API. Please try again.");
-  }
+  if (!generatedText) throw new Error("No code generated");
 
-  // Clean up the response
   generatedText = cleanGeneratedCode(generatedText);
-  
-  // Fix common syntax issues
-  generatedText = fixSyntaxErrors(generatedText);
-
-  // Validate the generated code
-  const validation = validateTestCode(generatedText);
-  if (!validation.isValid) {
-    console.warn("Generated code has issues:", validation.warnings);
-  }
+  generatedText = removeForbiddenPatterns(generatedText);
+  generatedText = validateAndFixFunctions(generatedText);
 
   return generatedText;
 }
 
 function cleanGeneratedCode(code: string): string {
-  // Remove markdown code fences
   code = code.replace(/^```[\w]*\s*\n/, "").replace(/\n\s*```\s*$/, "");
+  code = code.replace(/#[a-f0-9]+">/gi, "");
+  code = code.replace(/<span[^>]*>/g, "").replace(/<\/span>/g, "");
+  code = code.replace(/^.*?(?=describe\(|import |def |class |@Test|require )/s, "");
+  code = code.replace(/\n\n.*(?:hope|remember|note|good luck).*$/is, "");
+  return code.trim();
+}
+
+function removeForbiddenPatterns(code: string): string {
+  // Remove require() calls (but NOT function definitions)
+  code = code.replace(/^(const|let|var)\s+\w+\s*=\s*require\s*\([^)]*\);?\s*$/gm, "");
   
-  // Remove any markdown explanations that AI might add
-  code = code.replace(/^.*?(describe\(|function |const |let |var |import )/s, '$1');
+  // Remove import from project files
+  code = code.replace(/^import\s+.*from\s+['"][.\/][^'"]*['"];?\s*$/gm, "");
   
-  // Remove trailing explanations
-  code = code.replace(/\n\n.*(?:hope|remember|note|good luck|let me know).*$/is, '');
+  // Remove jest.mock with file paths
+  code = code.replace(/^jest\.mock\(['"][.\/][^'"]*['"].*;?\s*$/gm, "");
+  code = code.replace(/^vi\.mock\(['"][.\/][^'"]*['"].*;?\s*$/gm, "");
+  
+  // Remove process.env assignments
+  code = code.replace(/^.*process\.env\s*=.*;?\s*$/gm, "");
+  code = code.replace(/^delete process\.env.*;?\s*$/gm, "");
+  
+  // Remove global assignments
+  code = code.replace(/^global\.\w+\s*=.*;?\s*$/gm, "");
+  code = code.replace(/^globalThis\.\w+\s*=.*;?\s*$/gm, "");
+  
+  // Remove React spyOn
+  code = code.replace(/^jest\.spyOn\(React.*;?\s*$/gm, "");
+  
+  // Remove import React
+  code = code.replace(/^import React.*;?\s*$/gm, "");
+  
+  // Remove render/screen lines
+  code = code.replace(/^.*render\(<.*;?\s*$/gm, "");
+  code = code.replace(/^.*screen\.\w+.*;?\s*$/gm, "");
+  
+  // Remove beforeAll/afterAll blocks
+  code = code.replace(/^(beforeAll|afterAll)\s*\(\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*\);?/gm, "");
+  
+  // Remove jest.isolateModules blocks
+  code = code.replace(/jest\.isolateModules\s*\(\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*\);?/g, "");
+  
+  // Clean blank lines
+  code = code.replace(/\n{3,}/g, "\n\n");
   
   return code.trim();
 }
 
-function fixSyntaxErrors(code: string): string {
-  let fixed = code;
-
-  // Fix: Arrow functions without return statement
-  fixed = fixed.replace(
-    /const\s+(\w+)\s*=\s*(\([^)]*\))\s*=>\s*{/g,
-    'function $1$2 {'
-  );
-
-  // Fix: Missing semicolons after mock functions
-  fixed = fixed.replace(
-    /(jest\.fn\(\))\s*\n/g,
-    '$1;\n'
-  );
-
-  // Fix: Duplicate function declarations
-  const functions = new Set();
-  fixed = fixed.split('\n').filter(line => {
-    const funcMatch = line.match(/function\s+(\w+)/);
-    if (funcMatch) {
-      if (functions.has(funcMatch[1])) return false;
-      functions.add(funcMatch[1]);
-    }
-    return true;
-  }).join('\n');
-
-  return fixed;
-}
-
-function validateTestCode(code: string): { isValid: boolean; warnings: string[] } {
-  const warnings: string[] = [];
-
-  // Check if there are test blocks
-  if (!code.includes('describe(') && !code.includes('it(') && !code.includes('test(')) {
-    warnings.push('No test blocks found');
-  }
-
-  // Check if there are assertions
-  if (!code.includes('expect(') && !code.includes('assert(')) {
-    warnings.push('No assertions found');
-  }
-
-  // Check for import statements (should not have any)
-  const imports = code.match(/import\s+.*from\s+['"][.\/]/g);
-  if (imports) {
-    warnings.push(`Found file imports: ${imports.join(', ')}`);
-  }
-
-  // Check for jest.mock() calls (should not have any)
-  const mocks = code.match(/jest\.mock\(/g);
-  if (mocks) {
-    warnings.push(`Found ${mocks.length} jest.mock() calls`);
-  }
-
-  // Check bracket balance
-  const brackets = { '(': 0, ')': 0, '{': 0, '}': 0, '[': 0, ']': 0 };
-  for (const char of code) {
-    if (char in brackets) {
-      brackets[char as keyof typeof brackets]++;
+// NEW: Validate functions exist and add stubs if missing
+function validateAndFixFunctions(code: string): string {
+  // Find all function calls in expect statements
+  const calledFunctions = new Set<string>();
+  const callRegex = /expect\s*\(\s*(\w+)\s*\(/g;
+  let match;
+  while ((match = callRegex.exec(code)) !== null) {
+    if (!['expect', 'describe', 'it', 'test', 'beforeEach', 'afterEach'].includes(match[1])) {
+      calledFunctions.add(match[1]);
     }
   }
   
-  if (brackets['('] !== brackets[')']) {
-    warnings.push(`Unbalanced parentheses`);
+  // Find all defined functions
+  const definedFunctions = new Set<string>();
+  const defRegex = /function\s+(\w+)\s*\(/g;
+  while ((match = defRegex.exec(code)) !== null) {
+    definedFunctions.add(match[1]);
   }
-  if (brackets['{'] !== brackets['}']) {
-    warnings.push(`Unbalanced curly braces`);
+  
+  // Find missing functions
+  const missing: string[] = [];
+  calledFunctions.forEach(fn => {
+    if (!definedFunctions.has(fn)) {
+      missing.push(fn);
+    }
+  });
+  
+  if (missing.length > 0) {
+    console.warn("Missing function definitions:", missing);
+    
+    // Add placeholder warning at top of file
+    const warning = `\n// ⚠️ WARNING: These functions are called but not defined: ${missing.join(', ')}
+// The tests will fail. Please add function definitions.\n`;
+    
+    code = warning + code;
   }
-
-  return {
-    isValid: warnings.length === 0,
-    warnings,
-  };
+  
+  return code;
 }
 
-// Export for testing/debugging
-export { buildSmartPrompt, cleanGeneratedCode, validateTestCode };
+export { buildSmartPrompt, cleanGeneratedCode, removeForbiddenPatterns, validateAndFixFunctions };
