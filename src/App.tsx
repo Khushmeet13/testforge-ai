@@ -29,31 +29,31 @@ export default function App() {
   };
 
   const handleFilesSelected = async (selectedPaths: string[]) => {
-  setSelectedFiles(selectedPaths);
-  setUploadStep("analyzing");
-  
-  try {
-    // Now analyze only the selected files
-    const selectedFilesData = extractedFiles.filter(f => 
-      selectedPaths.includes(f.path)
-    );
-    
-    // Convert to format expected by analyzer
-    const filesForAnalysis = selectedFilesData.map(f => ({
-      path: f.path,
-      name: f.name,
-      content: f.content,
-      language: f.language,
-      size: f.size,
-    }));
-    
-    const analysis = analyzeProject(filesForAnalysis, projectName);
-    handleAnalysisComplete(analysis);
-  } catch (err) {
-    console.error("Analysis failed:", err);
-    setUploadStep("select");
-  }
-};
+    setSelectedFiles(selectedPaths);
+    setUploadStep("analyzing");
+
+    try {
+      // Now analyze only the selected files
+      const selectedFilesData = extractedFiles.filter(f =>
+        selectedPaths.includes(f.path)
+      );
+
+      // Convert to format expected by analyzer
+      const filesForAnalysis = selectedFilesData.map(f => ({
+        path: f.path,
+        name: f.name,
+        content: f.content,
+        language: f.language,
+        size: f.size,
+      }));
+
+      const analysis = analyzeProject(filesForAnalysis, projectName);
+      handleAnalysisComplete(analysis);
+    } catch (err) {
+      console.error("Analysis failed:", err);
+      setUploadStep("select");
+    }
+  };
 
   const handleAnalysisComplete = (result: AnalysisResult) => {
     setAnalysis(result);
@@ -97,9 +97,9 @@ export default function App() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Header 
-          onReset={handleReset} 
-          showReset={uploadStep !== "upload"} 
+        <Header
+          onReset={handleReset}
+          showReset={uploadStep !== "upload"}
           onBack={uploadStep !== "upload" && uploadStep !== "select" ? handleBackToSelect : undefined}
           currentStep={uploadStep}
         />
@@ -124,7 +124,7 @@ export default function App() {
               </div>
 
               {entryMode === "upload" ? (
-                <UploadZone 
+                <UploadZone
                   onFilesExtracted={handleFilesExtracted}
                   setProjectName={setProjectName}
                   onStateChange={setState}
@@ -173,9 +173,13 @@ export default function App() {
                 setSelectedFramework={setSelectedFramework}
                 projectName={projectName}
                 onTestsGenerated={handleTestsGenerated}
-                onStateChange={setState}
-                isGenerating={uploadStep === "generating"}
-                selectedFiles={selectedFiles}
+                onStateChange={(s) => {
+                  setState(s);
+                  if (s === "generating") setUploadStep("generating");
+                  if (s === "analyzed") setUploadStep("analyzed");
+                }}
+              isGenerating={uploadStep === "generating"}
+              selectedFiles={selectedFiles}
               />
             </div>
           )}
@@ -225,7 +229,7 @@ function AnalyzingScreen() {
       </div>
       <div className="flex gap-1">
         {[0, 1, 2, 3, 4].map(i => (
-          <div key={i} className="w-1.5 h-8 bg-[#00ff9d]/60 rounded-full animate-bounce" 
+          <div key={i} className="w-1.5 h-8 bg-[#00ff9d]/60 rounded-full animate-bounce"
             style={{ animationDelay: `${i * 0.1}s` }} />
         ))}
       </div>

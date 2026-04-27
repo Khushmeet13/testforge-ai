@@ -17,10 +17,12 @@ import {
   FiCopy, FiPackage, FiDownload, FiFileText, FiTrendingUp,
   FiAward, FiMessageCircle, FiBook,
   FiFolder, FiMonitor, FiGitMerge, FiPlay,
-  FiGithub, FiClipboard
+  FiGithub, FiClipboard,
+  FiUser
 } from "react-icons/fi";
 
 import { FaPuzzlePiece, FaRocket, FaBug } from "react-icons/fa";
+import { TestSummaryPanel } from "./TestSummaryPanel";
 
 interface TestOutputPanelProps {
   testOutput: string;
@@ -43,7 +45,7 @@ const FRAMEWORK_EXTENSIONS: Record<TestFramework, string> = {
 
 type Tab =
   | "code" | "coverage" | "mocks" | "cicd"
-  | "quality" | "chat" | "bugs" | "docs"
+  | "quality" | "chat" | "bugs" | "docs" | "summary"
   | "filetree" | "diff" | "runner" | "history"
   | "github" | "vscode" | "export";
 
@@ -64,6 +66,7 @@ const TAB_GROUPS = [
       { id: "chat" as Tab, icon: <FiMessageCircle className="text-sm" />, label: "Refine" },
       { id: "bugs" as Tab, icon: <FaBug className="text-sm" />, label: "Bug Scan" },
       { id: "docs" as Tab, icon: <FiBook className="text-sm" />, label: "Docs" },
+      { id: "summary" as Tab, icon: <FiUser className="text-sm" />, label: "Summary" },
     ],
   },
   {
@@ -301,6 +304,11 @@ export function TestOutputPanel({
         {activeTab === "chat" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><IterativeRefinement testOutput={testOutput} analysis={analysis} framework={framework} onTestsUpdated={setTestOutput} /></div>}
         {activeTab === "bugs" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><BugDetectionPanel analysis={analysis} /></div>}
         {activeTab === "docs" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DocGeneratorPanel analysis={analysis} framework={framework} /></div>}
+        {activeTab === "summary" && (
+          <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+            <TestSummaryPanel testOutput={testOutput} analysis={analysis} framework={framework} />
+          </div>
+        )}
         {activeTab === "filetree" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><FileTreeExplorer analysis={analysis} testOutput={testOutput} /></div>}
         {activeTab === "vscode" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><VSCodePreview analysis={analysis} testOutput={testOutput} framework={framework} projectName={projectName} /></div>}
         {activeTab === "diff" && <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl"><DiffViewer analysis={analysis} /></div>}

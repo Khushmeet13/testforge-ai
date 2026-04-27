@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnalysisResult, TestFramework } from "../types";
 import { runTests } from "../utils/universalTestRunner";
+import { TestSummaryPanel } from "./TestSummaryPanel";
 
 interface TestRunnerSimulatorProps {
   testOutput: string;       // the generated test code
@@ -11,33 +12,33 @@ interface TestRunnerSimulatorProps {
 }
 
 const FRAMEWORK_BANNER: Record<TestFramework, string> = {
-  jest:                    "JEST  v29.7.0",
-  vitest:                  "VITEST v1.6.0",
-  mocha:                   "MOCHA v10.4.0",
-  pytest:                  "pytest v8.2.0",
-  junit:                   "JUnit 5 v1.10.2",
-  rspec:                   "RSpec v3.13.0",
+  jest: "JEST  v29.7.0",
+  vitest: "VITEST v1.6.0",
+  mocha: "MOCHA v10.4.0",
+  pytest: "pytest v8.2.0",
+  junit: "JUnit 5 v1.10.2",
+  rspec: "RSpec v3.13.0",
   "react-testing-library": "RTL v16.3.0",
-  supertest:               "Supertest v7.0.0",
-  cypress:                 "Cypress v13.10.0",
+  supertest: "Supertest v7.0.0",
+  cypress: "Cypress v13.10.0",
 };
 
 const FRAMEWORK_ENGINE: Record<TestFramework, "webcontainer" | "judge0" | "unsupported"> = {
-  jest:                    "webcontainer",
-  vitest:                  "webcontainer",
-  mocha:                   "webcontainer",
+  jest: "webcontainer",
+  vitest: "webcontainer",
+  mocha: "webcontainer",
   "react-testing-library": "webcontainer",
-  supertest:               "webcontainer",
-  pytest:                  "judge0",
-  junit:                   "judge0",
-  rspec:                   "judge0",
-  cypress:                 "unsupported",
+  supertest: "webcontainer",
+  pytest: "judge0",
+  junit: "judge0",
+  rspec: "judge0",
+  cypress: "unsupported",
 };
 
 const ENGINE_BADGE: Record<string, { label: string; color: string; bg: string }> = {
   webcontainer: { label: "WebContainers", color: "#38bdf8", bg: "rgba(56,189,248,0.12)" },
-  judge0:       { label: "Judge0 API",    color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-  unsupported:  { label: "Not Supported", color: "#f87171", bg: "rgba(248,113,113,0.12)" },
+  judge0: { label: "Judge0 API", color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
+  unsupported: { label: "Not Supported", color: "#f87171", bg: "rgba(248,113,113,0.12)" },
 };
 
 // ANSI escape code stripping for clean terminal rendering
@@ -70,16 +71,17 @@ export function TestRunnerSimulator({
   framework,
   sourceFiles = {},
 }: TestRunnerSimulatorProps) {
-  const [status, setStatus]         = useState<"idle" | "running" | "pass" | "fail">("idle");
-  const [termLines, setTermLines]   = useState<string[]>([]);
-  const [elapsedMs, setElapsedMs]   = useState(0);
-  const termRef                     = useRef<HTMLDivElement>(null);
-  const timerRef                    = useRef<ReturnType<typeof setInterval> | null>(null);
-  const startTimeRef                = useRef<number>(0);
-  const abortRef                    = useRef(false);
+  const [status, setStatus] = useState<"idle" | "running" | "pass" | "fail">("idle");
+  const [termLines, setTermLines] = useState<string[]>([]);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const termRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const abortRef = useRef(false);
+  const [showSummary, setShowSummary] = useState(false);
 
   const engine = FRAMEWORK_ENGINE[framework] ?? "unsupported";
-  const badge  = ENGINE_BADGE[engine];
+  const badge = ENGINE_BADGE[engine];
 
   // Auto-scroll terminal
   useEffect(() => {
@@ -133,6 +135,7 @@ export function TestRunnerSimulator({
         appendOutput
       );
       setStatus(result);
+      setShowSummary(true);
     } catch (e: any) {
       appendOutput(`\n❌ Unexpected error: ${e.message}\n`);
       setStatus("fail");
@@ -148,6 +151,7 @@ export function TestRunnerSimulator({
   const handleClear = () => {
     setTermLines([]);
     setStatus("idle");
+    setShowSummary(false);
   };
 
   const formatTime = (ms: number) => {
@@ -156,15 +160,15 @@ export function TestRunnerSimulator({
   };
 
   const statusDotColor = {
-    idle:    "bg-white/20",
+    idle: "bg-white/20",
     running: "bg-[#fbbf24] animate-pulse",
-    pass:    "bg-[#00ff9d]",
-    fail:    "bg-[#f87171]",
+    pass: "bg-[#00ff9d]",
+    fail: "bg-[#f87171]",
   }[status];
 
-  const totalLines   = termLines.length;
-  const passedCount  = termLines.filter(l => /✓|✅|passed|PASSED/.test(l)).length;
-  const failedCount  = termLines.filter(l => /✗|❌|failed|FAILED|FAIL/.test(l)).length;
+  const totalLines = termLines.length;
+  const passedCount = termLines.filter(l => /✓|✅|passed|PASSED/.test(l)).length;
+  const failedCount = termLines.filter(l => /✗|❌|failed|FAILED|FAIL/.test(l)).length;
 
   return (
     <div className="space-y-3">
@@ -183,9 +187,9 @@ export function TestRunnerSimulator({
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium border"
             style={{
-              color:            badge.color,
-              backgroundColor:  badge.bg,
-              borderColor:      badge.color + '40',
+              color: badge.color,
+              backgroundColor: badge.bg,
+              borderColor: badge.color + '40',
             }}
           >
             {badge.label}
@@ -234,11 +238,11 @@ export function TestRunnerSimulator({
           </div>
 
           <span className="text-white/25 text-xs font-mono mx-auto">
-            {framework === "pytest"  ? "pytest --tb=short" :
-             framework === "junit"   ? "mvn test"          :
-             framework === "rspec"   ? "rspec --format documentation" :
-             framework === "cypress" ? "cypress run"       :
-             `npx ${framework}`} — terminal
+            {framework === "pytest" ? "pytest --tb=short" :
+              framework === "junit" ? "mvn test" :
+                framework === "rspec" ? "rspec --format documentation" :
+                  framework === "cypress" ? "cypress run" :
+                    `npx ${framework}`} — terminal
           </span>
 
           {/* Pass/Fail chip */}
@@ -246,7 +250,7 @@ export function TestRunnerSimulator({
             <span
               className="text-[10px] px-2 py-0.5 rounded-full font-bold flex-shrink-0"
               style={{
-                color:           status === "pass" ? "#00ff9d" : "#f87171",
+                color: status === "pass" ? "#00ff9d" : "#f87171",
                 backgroundColor: status === "pass" ? "rgba(0,255,157,0.15)" : "rgba(248,113,113,0.15)",
               }}
             >
@@ -265,10 +269,10 @@ export function TestRunnerSimulator({
             <div className="flex items-center gap-2 text-white/20">
               <span className="text-[#00ff9d]">$</span>
               <span>
-                {framework === "pytest"  ? "pytest --tb=short -v" :
-                 framework === "junit"   ? "mvn test"              :
-                 framework === "rspec"   ? "rspec --format d"      :
-                 `npx ${framework} --coverage`}
+                {framework === "pytest" ? "pytest --tb=short -v" :
+                  framework === "junit" ? "mvn test" :
+                    framework === "rspec" ? "rspec --format d" :
+                      `npx ${framework} --coverage`}
               </span>
               <span className="w-2 h-4 bg-white/15 animate-pulse" />
             </div>
@@ -357,6 +361,19 @@ export function TestRunnerSimulator({
           )}
         </div>
       )}
+
+      {showSummary && (status === "pass" || status === "fail") && (
+        <div className="mt-4 space-y-2">
+          <p className="text-white/30 text-md tracking-widest uppercase px-1">Summary</p>
+          <TestSummaryPanel
+            testOutput={testOutput}
+            analysis={analysis}
+            framework={framework}
+            runnerLines={termLines}
+          />
+        </div>
+      )}
+
     </div>
   );
 }
