@@ -1,4 +1,5 @@
 import { AnalysisResult, TestFramework } from "../types";
+import { exportSummaryPDF } from "../utils/exportSummaryPDF";
 
 interface Props {
   testOutput: string;
@@ -44,7 +45,7 @@ interface ParsedTest {
 
 //      if (runnerLines.length > 0) {
 //   const rawLower = raw.toLowerCase().trim();
-  
+
 //   for (let i = 0; i < runnerLines.length; i++) {
 //     // Runner line se symbols aur extra spaces hata do
 //     const cleanedLine = runnerLines[i]
@@ -82,6 +83,25 @@ interface ParsedTest {
 
 //   return tests.slice(0, 15);
 // }
+
+const NOISE_PATTERNS = [
+  /webcontainer/i,
+  /booting/i,
+  /installing/i,
+  /npm install/i,
+  /node_modules/i,
+  /📦|🚀|⏳|📡|🔬/,
+  /^\s*[\u2550\u2500]+\s*$/,   // ═══ or ─── separator lines
+  /ready in \d/i,
+  /added \d+ package/i,
+  /packages installed/i,
+  /setting up/i,
+  /mounting/i,
+];
+
+function isNoiseLine(line: string): boolean {
+  return NOISE_PATTERNS.some(p => p.test(line));
+}
 
 function parseTestsForHumans(testOutput: string, runnerLines: string[]): ParsedTest[] {
   const tests: ParsedTest[] = [];
@@ -227,7 +247,8 @@ const RESULT_STYLES = {
 };
 
 export function TestSummaryPanel({ testOutput, analysis, framework, runnerLines = [] }: Props) {
-  const tests = parseTestsForHumans(testOutput, runnerLines);
+  const cleanLines = runnerLines.filter(line => !isNoiseLine(line));
+  const tests = parseTestsForHumans(testOutput, cleanLines);
   const testCount = (testOutput.match(/\bit\(|def test_|@Test/g) || []).length;
   const edgeCount = tests.filter((t) => t.type === "edge").length;
   const featureCount = (testOutput.match(/\bdescribe\(|class Test/g) || []).length || 1;
@@ -240,18 +261,47 @@ export function TestSummaryPanel({ testOutput, analysis, framework, runnerLines 
   const fileName = analysis.files[0]?.name || "your project";
   const projectSummary = analysis.summary || "your codebase";
 
+  const handleExport = () => {
+    exportSummaryPDF({
+      fileName: analysis.files[0]?.name?.replace(/\.[^.]+$/, "") || "project",
+      framework,
+      tests,
+      passedCount,
+      failedCount,
+      totalTests: testCount,
+      projectSummary: analysis.summary || "your codebase",
+      edgeCount,
+    });
+  }
+
   return (
     <div className="space-y-4">
 
       {/* Hero */}
       <div className="p-5 bg-white/[0.03] border border-white/10 rounded-xl">
-        <p className="text-white text-sm font-medium mb-1">What was tested?</p>
-        <p className="text-white/50 text-sm leading-relaxed">
-          Your <span className="text-white font-medium">{fileName}</span> file was checked.{" "}
-          It handles <span className="text-white/70">{projectSummary}</span> — and{" "}
-          <span className="text-[#00ff9d] font-medium">{testCount} automated checks</span> were
-          written to make sure everything works correctly without any bugs.
-        </p>
+          <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-white text-sm font-medium mb-1">What was tested?</p>
+          <p className="text-white/50 text-sm leading-relaxed">
+            Your <span className="text-white font-medium">{fileName}</span> file was checked.{" "}
+            It handles <span className="text-white/70">{projectSummary}</span> — and{" "}
+            <span className="text-[#00ff9d] font-medium">{testCount} automated checks</span> were
+            written to make sure everything works correctly without any bugs.
+          </p>
+        </div>
+
+        {/* Export button */}
+        <button
+          onClick={handleExport}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs border border-white/10 hover:border-[#7b2fff]/40 text-white/40 hover:text-[#7b2fff] bg-white/[0.02] hover:bg-[#7b2fff]/5 rounded-lg transition-all font-mono"
+          title="Export summary as PDF"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1v7M3 5l3 3 3-3M1 9v1a1 1 0 001 1h8a1 1 0 001-1V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Export PDF
+        </button>
+      </div>
       </div>
 
       {/* Stats */}
