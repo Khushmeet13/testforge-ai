@@ -52,21 +52,66 @@ function getFrameworkSyntax(framework: TestFramework) {
       assertion: "expect(value).toBe(expected)",
       mockFunc: "vi.fn()",
       asyncPattern: "async/await",
-      importLine: "import { describe, it, expect, vi } from 'vitest';",
-      example: `import { describe, it, expect, vi } from 'vitest';
+      importLine: "import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';",
+      example: `import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('Pure Functions', () => {
+  // STEP 1: DEFINE all functions first
   function validateEmail(email) {
     if (!email) return false;
     return email.includes('@');
   }
   
+  function formatCard(num) {
+    if (!num) return '';
+    const d = num.replace(/\\D/g, '');
+    return d.match(/.{1,4}/g)?.join(' ') || d;
+  }
+  
+  function handleFilter(currentParams, updates) {
+    return { ...currentParams, ...updates };
+  }
+  
+  // STEP 2: Write tests after functions
   describe('validateEmail', () => {
-    it('valid email', () => {
-      expect(validateEmail('test@test.com')).toBe(true);
+    it('should return true for valid email', () => {
+      expect(validateEmail('test@example.com')).toBe(true);
     });
-    it('empty email', () => {
+    
+    it('should return false for empty string', () => {
       expect(validateEmail('')).toBe(false);
+    });
+    
+    it('should return false for null value', () => {
+      expect(validateEmail(null)).toBe(false);
+    });
+  });
+  
+  describe('formatCard', () => {
+    it('should format 16 digit card number', () => {
+      expect(formatCard('1234567890123456')).toBe('1234 5678 9012 3456');
+    });
+    
+    it('should return empty string for empty input', () => {
+      expect(formatCard('')).toBe('');
+    });
+    
+    it('should handle undefined gracefully', () => {
+      expect(formatCard(undefined)).toBe('');
+    });
+  });
+  
+  describe('handleFilter', () => {
+    it('should update keyword while preserving other params', () => {
+      const current = { keyword: 'old', city: 'NY', genreId: '1' };
+      const updates = { keyword: 'new' };
+      const expected = { keyword: 'new', city: 'NY', genreId: '1' };
+      expect(handleFilter(current, updates)).toEqual(expected);
+    });
+    
+    it('should return same object when no updates provided', () => {
+      const current = { keyword: 'rock', city: 'LA', genreId: '2' };
+      expect(handleFilter(current, {})).toEqual(current);
     });
   });
 });`
@@ -262,9 +307,9 @@ end`
 }
 
 function buildSmartPrompt(analysis: AnalysisResult, framework: TestFramework, selectedFiles: string[]): string {
-  
+
   const syntax = getFrameworkSyntax(framework);
-  
+
   const sourceCode = analysis.files
     .filter(f => selectedFiles.some(sf => f.path.includes(sf)))
     .map(f => `
@@ -281,6 +326,7 @@ ${'─'.repeat(50)}
     .join("\n");
 
   return `Generate ${syntax.name} test. PURE FUNCTIONS ONLY.
+
 
 ═══════════════════════════════════════════
 ${syntax.name.toUpperCase()} | ${analysis.projectName} | ${analysis.languages.join(", ")}
@@ -393,41 +439,41 @@ function cleanGeneratedCode(code: string): string {
 function removeForbiddenPatterns(code: string): string {
   // Remove require() calls (but NOT function definitions)
   code = code.replace(/^(const|let|var)\s+\w+\s*=\s*require\s*\([^)]*\);?\s*$/gm, "");
-  
+
   // Remove import from project files
   code = code.replace(/^import\s+.*from\s+['"][.\/][^'"]*['"];?\s*$/gm, "");
-  
+
   // Remove jest.mock with file paths
   code = code.replace(/^jest\.mock\(['"][.\/][^'"]*['"].*;?\s*$/gm, "");
   code = code.replace(/^vi\.mock\(['"][.\/][^'"]*['"].*;?\s*$/gm, "");
-  
+
   // Remove process.env assignments
   code = code.replace(/^.*process\.env\s*=.*;?\s*$/gm, "");
   code = code.replace(/^delete process\.env.*;?\s*$/gm, "");
-  
+
   // Remove global assignments
   code = code.replace(/^global\.\w+\s*=.*;?\s*$/gm, "");
   code = code.replace(/^globalThis\.\w+\s*=.*;?\s*$/gm, "");
-  
+
   // Remove React spyOn
   code = code.replace(/^jest\.spyOn\(React.*;?\s*$/gm, "");
-  
+
   // Remove import React
   code = code.replace(/^import React.*;?\s*$/gm, "");
-  
+
   // Remove render/screen lines
   code = code.replace(/^.*render\(<.*;?\s*$/gm, "");
   code = code.replace(/^.*screen\.\w+.*;?\s*$/gm, "");
-  
+
   // Remove beforeAll/afterAll blocks
   code = code.replace(/^(beforeAll|afterAll)\s*\(\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*\);?/gm, "");
-  
+
   // Remove jest.isolateModules blocks
   code = code.replace(/jest\.isolateModules\s*\(\s*\(\)\s*=>\s*\{[\s\S]*?\}\s*\);?/g, "");
-  
+
   // Clean blank lines
   code = code.replace(/\n{3,}/g, "\n\n");
-  
+
   return code.trim();
 }
 
@@ -442,14 +488,14 @@ function validateAndFixFunctions(code: string): string {
       calledFunctions.add(match[1]);
     }
   }
-  
+
   // Find all defined functions
   const definedFunctions = new Set<string>();
   const defRegex = /function\s+(\w+)\s*\(/g;
   while ((match = defRegex.exec(code)) !== null) {
     definedFunctions.add(match[1]);
   }
-  
+
   // Find missing functions
   const missing: string[] = [];
   calledFunctions.forEach(fn => {
@@ -457,17 +503,17 @@ function validateAndFixFunctions(code: string): string {
       missing.push(fn);
     }
   });
-  
+
   if (missing.length > 0) {
     console.warn("Missing function definitions:", missing);
-    
+
     // Add placeholder warning at top of file
     const warning = `\n// ⚠️ WARNING: These functions are called but not defined: ${missing.join(', ')}
 // The tests will fail. Please add function definitions.\n`;
-    
+
     code = warning + code;
   }
-  
+
   return code;
 }
 
