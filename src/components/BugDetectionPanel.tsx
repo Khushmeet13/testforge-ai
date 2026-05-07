@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AnalysisResult, BugReport, BugSeverity } from "../types";
+import { BiSearch } from "react-icons/bi";
 
 interface BugDetectionPanelProps {
   analysis: AnalysisResult;
@@ -198,7 +199,7 @@ Return 5-12 specific bugs. Be concrete - reference actual function names and lin
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <button onClick={runDetection}
           className="px-8 py-3 bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white font-bold rounded-xl hover:shadow-[0_0_30px_rgba(239,68,68,0.3)] transition-all text-sm">
-          🔍 Scan for Bugs
+          Scan for Bugs
         </button>
       </div>
     );
@@ -211,7 +212,7 @@ Return 5-12 specific bugs. Be concrete - reference actual function names and lin
         <div className="relative w-20 h-20">
           <div className="absolute inset-0 border-2 border-[#ef4444]/20 rounded-full animate-ping" />
           <div className="absolute inset-2 border-t-2 border-[#ef4444] rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-xl">🔍</div>
+          <div className="absolute inset-0 flex items-center justify-center text-xl"><BiSearch /></div>
         </div>
         <div className="text-center space-y-1">
           <p className="text-[#ef4444] text-sm tracking-widest uppercase">Scanning Code</p>

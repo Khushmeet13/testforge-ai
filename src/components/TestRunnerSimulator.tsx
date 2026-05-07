@@ -4,10 +4,9 @@ import { runTests } from "../utils/universalTestRunner";
 import { TestSummaryPanel } from "./TestSummaryPanel";
 
 interface TestRunnerSimulatorProps {
-  testOutput: string;       // the generated test code
+  testOutput: string;
   analysis: AnalysisResult;
   framework: TestFramework;
-  /** Optional: pass source files so WebContainers can run against real code */
   sourceFiles?: Record<string, string>;
 }
 
@@ -41,13 +40,11 @@ const ENGINE_BADGE: Record<string, { label: string; color: string; bg: string }>
   unsupported: { label: "Not Supported", color: "#f87171", bg: "rgba(248,113,113,0.12)" },
 };
 
-// ANSI escape code stripping for clean terminal rendering
 function stripAnsi(str: string): string {
   // eslint-disable-next-line no-control-regex
   return str.replace(/\x1B\[[0-?]*[ -/]*[@-~]/g, '');
 }
 
-// Colorize terminal lines based on content
 function getLineStyle(text: string): string {
   const t = text.toLowerCase();
   if (t.includes('✅') || t.includes('passed') || t.includes('pass') || t.includes('✓'))
@@ -80,26 +77,26 @@ export function TestRunnerSimulator({
   const abortRef = useRef(false);
   const [showSummary, setShowSummary] = useState(false);
 
+  // ✅ Persistent store: last successful run ka result hamesha yahan rehta hai
+  const [persistedRunnerLines, setPersistedRunnerLines] = useState<string[]>([]);
+  const [persistedStatus, setPersistedStatus] = useState<"pass" | "fail" | null>(null);
+
   const engine = FRAMEWORK_ENGINE[framework] ?? "unsupported";
   const badge = ENGINE_BADGE[engine];
 
-  // Auto-scroll terminal
   useEffect(() => {
     if (termRef.current) {
       termRef.current.scrollTo({ top: termRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [termLines]);
 
-  // Cleanup timer on unmount
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   const appendOutput = useCallback((chunk: string) => {
     if (abortRef.current) return;
-    // Split chunk into lines, strip ANSI, push each
     const lines = stripAnsi(chunk).split('\n');
     setTermLines(prev => {
       const next = [...prev];
-      // Append to last line if no newline at end of previous chunk
       if (lines.length > 0) {
         lines.forEach((line, i) => {
           if (i === 0 && next.length > 0 && !next[next.length - 1].endsWith('\n')) {
@@ -109,7 +106,7 @@ export function TestRunnerSimulator({
           }
         });
       }
-      return next.slice(-500); // keep last 500 lines max
+      return next.slice(-500);
     });
   }, []);
 
@@ -121,7 +118,6 @@ export function TestRunnerSimulator({
     setTermLines([]);
     setElapsedMs(0);
 
-    // Start elapsed timer
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       setElapsedMs(Date.now() - startTimeRef.current);
@@ -136,6 +132,15 @@ export function TestRunnerSimulator({
       );
       setStatus(result);
       setShowSummary(true);
+
+      // ✅ Run complete hone ke baad lines ko persist kar do
+      // termLines ka latest snapshot lene ke liye functional update use karo
+      setTermLines(currentLines => {
+        setPersistedRunnerLines(currentLines);
+        setPersistedStatus(result);
+        return currentLines; // unchanged
+      });
+
     } catch (e: any) {
       appendOutput(`\n❌ Unexpected error: ${e.message}\n`);
       setStatus("fail");
@@ -152,6 +157,8 @@ export function TestRunnerSimulator({
     setTermLines([]);
     setStatus("idle");
     setShowSummary(false);
+    // ✅ Note: persistedRunnerLines clear NAHI karte
+    //    taaki summary tab mein data bana rahe
   };
 
   const formatTime = (ms: number) => {
@@ -175,15 +182,11 @@ export function TestRunnerSimulator({
 
       {/* ── Top bar ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-
-        {/* Left: status dot + framework */}
         <div className="flex items-center gap-3">
           <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${statusDotColor}`} />
           <span className="text-white/50 text-xs font-mono tracking-widest">
             {FRAMEWORK_BANNER[framework]}
           </span>
-
-          {/* Engine badge */}
           <span
             className="text-[10px] px-2 py-0.5 rounded-full font-medium border"
             style={{
@@ -196,7 +199,6 @@ export function TestRunnerSimulator({
           </span>
         </div>
 
-        {/* Right: action buttons */}
         <div className="flex items-center gap-2">
           {termLines.length > 0 && (
             <button
@@ -228,15 +230,12 @@ export function TestRunnerSimulator({
 
       {/* ── Terminal window ──────────────────────────────────── */}
       <div className="rounded-xl overflow-hidden border border-white/8 shadow-2xl">
-
-        {/* Title bar */}
         <div className="flex items-center gap-2 px-4 py-2.5 bg-[#1a1a2e] border-b border-white/5">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 rounded-full bg-[#ff5f57]" />
             <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
             <div className="w-3 h-3 rounded-full bg-[#28ca41]" />
           </div>
-
           <span className="text-white/25 text-xs font-mono mx-auto">
             {framework === "pytest" ? "pytest --tb=short" :
               framework === "junit" ? "mvn test" :
@@ -244,8 +243,6 @@ export function TestRunnerSimulator({
                   framework === "cypress" ? "cypress run" :
                     `npx ${framework}`} — terminal
           </span>
-
-          {/* Pass/Fail chip */}
           {(status === "pass" || status === "fail") && (
             <span
               className="text-[10px] px-2 py-0.5 rounded-full font-bold flex-shrink-0"
@@ -259,12 +256,10 @@ export function TestRunnerSimulator({
           )}
         </div>
 
-        {/* Output area */}
         <div
           ref={termRef}
           className="bg-[#080810] h-96 overflow-y-auto p-4 font-mono text-xs leading-5 scroll-smooth"
         >
-          {/* Idle prompt */}
           {status === "idle" && termLines.length === 0 && (
             <div className="flex items-center gap-2 text-white/20">
               <span className="text-[#00ff9d]">$</span>
@@ -278,7 +273,6 @@ export function TestRunnerSimulator({
             </div>
           )}
 
-          {/* Unsupported notice */}
           {engine === "unsupported" && status === "idle" && (
             <div className="mt-4 p-4 border border-[#f87171]/20 bg-[#f87171]/5 rounded-lg text-[#f87171]/80 text-xs leading-6">
               <p className="font-bold mb-1">⚠️ {framework} requires a real browser + server</p>
@@ -287,7 +281,6 @@ export function TestRunnerSimulator({
             </div>
           )}
 
-          {/* Rendered lines */}
           {termLines.map((line, i) => (
             <div
               key={i}
@@ -297,7 +290,6 @@ export function TestRunnerSimulator({
             </div>
           ))}
 
-          {/* Running indicator */}
           {status === "running" && (
             <div className="flex items-center gap-1.5 mt-2 py-1">
               {[0, 1, 2].map(i => (
@@ -311,10 +303,7 @@ export function TestRunnerSimulator({
           )}
         </div>
 
-        {/* Status bar */}
         <div className="px-4 py-2 bg-[#0d0d14] border-t border-white/6 flex items-center gap-4 text-[10px] font-mono">
-
-          {/* Counts */}
           {passedCount > 0 && (
             <span className="flex items-center gap-1 text-[#00ff9d]">
               <span>✓</span> {passedCount} passed
@@ -328,13 +317,9 @@ export function TestRunnerSimulator({
           {totalLines === 0 && status === "idle" && (
             <span className="text-white/20">no output yet</span>
           )}
-
-          {/* Elapsed */}
           {(status === "running" || status === "pass" || status === "fail") && (
             <span className="text-white/25 ml-auto">{formatTime(elapsedMs)}</span>
           )}
-
-          {/* Engine label */}
           <span className="text-white/15 ml-auto">{badge.label}</span>
         </div>
       </div>
@@ -362,14 +347,35 @@ export function TestRunnerSimulator({
         </div>
       )}
 
-      {showSummary && (status === "pass" || status === "fail") && (
+      {/* ── Summary panel ───────────────────────────────────── */}
+      {/*
+        ✅ Ab summary tab ko persisted lines milti hain, runner tab se independent.
+        - showSummary: pehli baar run ke baad true hota hai
+        - persistedRunnerLines: last run ka poora output store rehta hai
+        - persistedStatus: last run pass/fail status badge ke liye
+        - "clear" se terminal saaf hota hai, lekin summary data nahi jaata
+      */}
+      {showSummary && persistedStatus !== null && (
         <div className="mt-4 space-y-2">
-          <p className="text-white/30 text-md tracking-widest uppercase px-1">Summary</p>
+          <div className="flex items-center justify-between px-1">
+            <p className="text-white/30 text-md tracking-widest uppercase">Summary</p>
+            {/* ✅ Last run ka status badge hamesha dikhta hai */}
+            <span
+              className="text-[10px] px-2.5 py-1 rounded-full font-bold border"
+              style={{
+                color: persistedStatus === "pass" ? "#00ff9d" : "#f87171",
+                backgroundColor: persistedStatus === "pass" ? "rgba(0,255,157,0.1)" : "rgba(248,113,113,0.1)",
+                borderColor: persistedStatus === "pass" ? "rgba(0,255,157,0.3)" : "rgba(248,113,113,0.3)",
+              }}
+            >
+              Last run: {persistedStatus === "pass" ? "PASSED" : "FAILED"}
+            </span>
+          </div>
           <TestSummaryPanel
             testOutput={testOutput}
             analysis={analysis}
             framework={framework}
-            runnerLines={termLines}
+            runnerLines={persistedRunnerLines}  // ✅ Persisted lines use ho rahi hain
           />
         </div>
       )}

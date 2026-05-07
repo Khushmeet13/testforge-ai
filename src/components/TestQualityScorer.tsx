@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { AnalysisResult, TestFramework, QualityReport, QualityDimension, QualitySuggestion } from "../types";
+import { BiSearch, BiTrophy } from "react-icons/bi";
 
 interface TestQualityScorerProps {
   testOutput: string;
@@ -178,7 +179,7 @@ Be specific and actionable. Include 3-7 suggestions. Include 2-4 strengths.`;
             <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(123,47,255,0.3)" strokeWidth="10" strokeDasharray="80 171" strokeLinecap="round" />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl">🏆</span>
+            <span className="text-3xl"><BiTrophy /></span>
           </div>
         </div>
         <div className="text-center">
@@ -202,7 +203,7 @@ Be specific and actionable. Include 3-7 suggestions. Include 2-4 strengths.`;
         <div className="relative w-20 h-20">
           <div className="absolute inset-0 border-2 border-[#7b2fff]/20 rounded-full animate-ping" />
           <div className="absolute inset-2 border-t-2 border-[#7b2fff] rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-xl">🔍</div>
+          <div className="absolute inset-0 flex items-center justify-center text-xl"><BiSearch className="text-[#7b2fff]" /></div>
         </div>
         <div className="text-center">
           <p className="text-[#7b2fff] text-sm tracking-widest uppercase">Analyzing Test Quality</p>

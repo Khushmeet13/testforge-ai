@@ -97,6 +97,8 @@ const NOISE_PATTERNS = [
   /packages installed/i,
   /setting up/i,
   /mounting/i,
+  /^\s*[✓✗❯]\s+\S+\.\S+\.\S+\s*\(\d+\)/,  // file lines: "✓ index.test.ts (6)"
+  /^\s*[✓✗❯]\s+[\w\s]+\(\d+\)\s*$/,         // suite lines: "✓ Pure Functions (6)"
 ];
 
 function isNoiseLine(line: string): boolean {
@@ -116,14 +118,20 @@ function parseTestsForHumans(testOutput: string, runnerLines: string[]): ParsedT
     //                    ✗ should return false for null inputs (5 ms)
     const passMatch = line.match(/✓|✅/);
     const failMatch = line.match(/✗|❌|×/);
+    // const passMatch = line.match(/^[ \t]{6,}✓/);
+    // const failMatch = line.match(/^[ \t]{6,}[✗❌×]/);
+
+      if ((passMatch || failMatch) && /\(\d+\)\s*$/.test(line) && !/ms\)/.test(line)) continue;
 
     if (passMatch || failMatch) {
       // Symbol ke baad ka text nikalo, timing hata do
-      const name = line
-        .replace(/[✓✅✗❌×]/g, "")
-        .replace(/\(\d+\s*ms\)/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
+       const name = line
+      .replace(/[✓✅✗❌×]/g, "")
+      .replace(/\(\d+\s*ms\)/g, "")
+      .replace(/RUNS\s+\.\/\S+/g, "")
+      .replace(/PASS\s+\.\/\S+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
       if (name.length < 3) continue; // empty lines skip
 
@@ -149,7 +157,12 @@ function parseTestsForHumans(testOutput: string, runnerLines: string[]): ParsedT
   // Step 2: Runner results ko ParsedTest format mein convert karo
   // Agar runner results mile toh unhe use karo
   if (runnerResults.length > 0) {
-    return runnerResults.map(r => {
+    const seen = new Map<string, typeof runnerResults[0]>();
+    for (const r of runnerResults) {
+      seen.set(r.name.toLowerCase().trim(), r);
+    }
+    const deduped = Array.from(seen.values());
+   return deduped.map(r => {
       let type: "unit" | "api" | "edge" = "unit";
       if (/fail|invalid|missing|error|null|undefined|empty|wrong|duplicate|out of bounds/i.test(r.name))
         type = "edge";
@@ -279,29 +292,29 @@ export function TestSummaryPanel({ testOutput, analysis, framework, runnerLines 
 
       {/* Hero */}
       <div className="p-5 bg-white/[0.03] border border-white/10 rounded-xl">
-          <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-white text-sm font-medium mb-1">What was tested?</p>
-          <p className="text-white/50 text-sm leading-relaxed">
-            Your <span className="text-white font-medium">{fileName}</span> file was checked.{" "}
-            It handles <span className="text-white/70">{projectSummary}</span> — and{" "}
-            <span className="text-[#00ff9d] font-medium">{testCount} automated checks</span> were
-            written to make sure everything works correctly without any bugs.
-          </p>
-        </div>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-white text-sm font-medium mb-1">What was tested?</p>
+            <p className="text-white/50 text-sm leading-relaxed">
+              Your <span className="text-white font-medium">{fileName}</span> file was checked.{" "}
+              It handles <span className="text-white/70">{projectSummary}</span> — and{" "}
+              <span className="text-[#00ff9d] font-medium">{testCount} automated checks</span> were
+              written to make sure everything works correctly without any bugs.
+            </p>
+          </div>
 
-        {/* Export button */}
-        <button
-          onClick={handleExport}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs border border-white/10 hover:border-[#7b2fff]/40 text-white/40 hover:text-[#7b2fff] bg-white/[0.02] hover:bg-[#7b2fff]/5 rounded-lg transition-all font-mono"
-          title="Export summary as PDF"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M6 1v7M3 5l3 3 3-3M1 9v1a1 1 0 001 1h8a1 1 0 001-1V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Export PDF
-        </button>
-      </div>
+          {/* Export button */}
+          <button
+            onClick={handleExport}
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs border border-white/10 hover:border-[#7b2fff]/40 text-white/40 hover:text-[#7b2fff] bg-white/[0.02] hover:bg-[#7b2fff]/5 rounded-lg transition-all font-mono"
+            title="Export summary as PDF"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <path d="M6 1v7M3 5l3 3 3-3M1 9v1a1 1 0 001 1h8a1 1 0 001-1V9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
